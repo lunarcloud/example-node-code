@@ -124,14 +124,26 @@ Note the spaces after `///` for proper indentation in summary blocks.
 
 ## Testing Guidelines
 
-### Future Testing
+### Test Framework
 
-This project currently does not have automated tests but should follow these guidelines when tests are added:
+We use xUnit for unit and integration tests.
 
-- Use modern testing frameworks (xUnit or MSTest v4)
+### Test Naming Convention
+
+Use the pattern: `ClassName_MethodUnderTest_Scenario_ExpectedBehavior`
+
+Examples:
+
+- `MainWindowViewModel_Constructor_InitializesDrawingProperty`
+- `MainWindow_Load_DisplaysCorrectTitle`
+
+### Writing Tests
+
 - Write tests that are clear and focused
-- Consider UI testing frameworks like Avalonia.Headless for UI tests
+- Use descriptive test names that explain what is being tested
+- Always clean up resources (dispose of view models, windows, etc.)
 - Link tests to requirements in `requirements.yaml` when applicable
+- Consider using Avalonia.Headless for UI testing
 
 ### Running Tests
 
@@ -174,13 +186,14 @@ All files are spell-checked using cspell. Add project-specific terms to `.cspell
 
 Before submitting a pull request, ensure all quality checks pass:
 
-### 1. Build
+### 1. Build and Test
 
 ```bash
 dotnet build --configuration Release
+dotnet test --configuration Release
 ```
 
-Build must succeed with zero warnings.
+All tests must pass with zero warnings.
 
 ### 2. Linting
 
@@ -191,9 +204,9 @@ cspell "**/*.{md,cs}"
 yamllint -c .yamllint.yaml .
 ```
 
-### 3. Code Quality
+### 3. Code Coverage
 
-Maintain high code quality standards. Code should follow the project's style guidelines and pass all static analysis checks.
+Maintain or improve code coverage. Use the `--collect "XPlat Code Coverage"` option when running tests.
 
 ## Commit Messages
 
@@ -214,10 +227,11 @@ Examples:
 ## Pull Request Process
 
 1. **Update Documentation**: Update relevant documentation for your changes
-2. **Run Quality Checks**: Ensure all linters and builds pass
-3. **Submit PR**: Create a pull request with a clear description
-4. **Code Review**: Address feedback from maintainers
-5. **Merge**: Once approved, a maintainer will merge your PR
+2. **Add Tests**: Include tests that cover your changes
+3. **Run Quality Checks**: Ensure all linters, tests, and builds pass
+4. **Submit PR**: Create a pull request with a clear description
+5. **Code Review**: Address feedback from maintainers
+6. **Merge**: Once approved, a maintainer will merge your PR
 
 ### Pull Request Template
 
@@ -228,8 +242,9 @@ When creating a pull request, include:
 - **Related Issues**: Link to any related issues
 - **Testing**: How have you tested these changes?
 - **Checklist**:
+  - [ ] Tests added/updated
   - [ ] Documentation updated
-  - [ ] Build passes
+  - [ ] All tests pass
   - [ ] Code follows style guidelines
   - [ ] No new warnings introduced
 
