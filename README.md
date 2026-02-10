@@ -7,13 +7,13 @@ A cross-platform node editor application built with Avalonia UI and NodeEditorAv
 - **Cross-platform**: Runs on Windows, Linux, and macOS
 - **Node Editor**: Visual node-based editing using NodeEditorAvalonia
 - **Modern UI**: Built with Avalonia 11.3.11 and Fluent theme
-- **Multi-targeting**: Supports .NET 8.0, 9.0, and 10.0
+- **.NET 10**: Built on the latest .NET 10.0 framework
 
 ## Building
 
 ### Prerequisites
 
-- [.NET SDK 8.0, 9.0, or 10.0](https://dotnet.microsoft.com/download)
+- [.NET SDK 10.0](https://dotnet.microsoft.com/download)
 
 ### Build Instructions
 
