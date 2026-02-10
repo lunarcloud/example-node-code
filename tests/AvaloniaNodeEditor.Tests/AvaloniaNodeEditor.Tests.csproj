@@ -5,6 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- Suppress NETSDK1188 warnings about test platform locales in invariant globalization mode -->
+    <NoWarn>$(NoWarn);NETSDK1188</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
