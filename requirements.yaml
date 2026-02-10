@@ -1,0 +1,59 @@
+---
+requirements:
+  - id: ANE-REQ-001
+    title: Cross-Platform Desktop Support
+    description: |
+      The application shall run on Windows, Linux, and macOS desktop platforms
+      using Avalonia UI framework.
+    type: functional
+    verification: test
+    rationale: |
+      Provides a consistent user experience across all major desktop platforms.
+
+  - id: ANE-REQ-002
+    title: Node Editor Interface
+    description: |
+      The application shall provide a visual node editor interface using
+      NodeEditorAvalonia library for creating and editing node graphs.
+    type: functional
+    verification: test
+    rationale: |
+      Core functionality for visual node-based workflows.
+
+  - id: ANE-REQ-003
+    title: MVVM Architecture
+    description: |
+      The application shall use the MVVM (Model-View-ViewModel) pattern with
+      proper data binding and observable properties.
+    type: non-functional
+    verification: inspection
+    rationale: |
+      Ensures maintainable and testable code structure following Avalonia best practices.
+
+  - id: ANE-REQ-004
+    title: .NET 10 Runtime
+    description: |
+      The application shall target .NET 10 framework.
+    type: non-functional
+    verification: build
+    rationale: |
+      Uses the latest .NET framework for optimal performance and features.
+
+  - id: ANE-REQ-005
+    title: Modern UI Theme
+    description: |
+      The application shall use Avalonia Fluent theme for a modern look and feel.
+    type: non-functional
+    verification: inspection
+    rationale: |
+      Provides a contemporary user interface consistent with modern design principles.
+
+  - id: ANE-REQ-006
+    title: Code Quality Standards
+    description: |
+      The application shall pass all static code analysis checks including CodeQL
+      and .NET analyzers.
+    type: non-functional
+    verification: analysis
+    rationale: |
+      Maintains high code quality standards and security practices.
