@@ -285,6 +285,3 @@ Thank you for contributing to Avalonia Node Editor!
 [discussions]: https://github.com/lunarcloud/example-node-code/discussions
 [issues]: https://github.com/lunarcloud/example-node-code/issues
 [security]: https://github.com/lunarcloud/example-node-code/blob/main/SECURITY.md
-[discussions]: https://github.com/demaconsulting/TemplateDotNetTool/discussions
-[issues]: https://github.com/demaconsulting/TemplateDotNetTool/issues
-[security]: https://github.com/demaconsulting/TemplateDotNetTool/blob/main/SECURITY.md
