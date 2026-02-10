@@ -1,11 +1,11 @@
 ---
 name: Software Quality Enforcer
-description: Code quality specialist for Template DotNet Tool - enforce testing, coverage, static analysis, and zero warnings
+description: Code quality specialist for Avalonia Node Editor - enforce testing, coverage, static analysis, and zero warnings
 ---
 
-# Software Quality Enforcer - Template DotNet Tool
+# Software Quality Enforcer - Avalonia Node Editor
 
-Enforce quality standards for Template DotNet Tool reference implementation.
+Enforce quality standards for Avalonia Node Editor reference implementation.
 
 ## Quality Gates (ALL Must Pass)
 
@@ -16,7 +16,7 @@ Enforce quality standards for Template DotNet Tool reference implementation.
 - Markdown/spell/YAML linting
 - Requirements traceability (all linked to tests)
 
-## Template DotNet Tool-Specific
+## Avalonia Node Editor-Specific
 
 - **Test Naming**: `TemplateTool_MethodUnderTest_Scenario` (for requirements traceability)
 - **Test Linkage**: All requirements MUST link to tests (prefer `TemplateTool_*` self-validation)

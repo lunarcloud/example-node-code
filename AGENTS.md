@@ -55,9 +55,8 @@ All DEMA Consulting tools should support:
 # Build the project
 dotnet build --configuration Release
 
-# Run self-validation
-dotnet run --project src/DemaConsulting.TemplateDotNetTool \
-  --configuration Release --framework net10.0 --no-build -- --validate
+# Run the application
+dotnet run --project src/AvaloniaNodeEditor/AvaloniaNodeEditor.csproj
 
 # Use convenience scripts
 ./build.sh    # Linux/macOS

@@ -1,13 +1,13 @@
 ---
 name: Project Maintainer
-description: Expert agent for Template DotNet Tool project management, dependencies, CI/CD, releases, and requirements traceability
+description: Expert agent for Avalonia Node Editor project management, dependencies, CI/CD, releases, and requirements traceability
 ---
 
-# Project Maintainer - Template DotNet Tool
+# Project Maintainer - Avalonia Node Editor
 
-Maintain Template DotNet Tool infrastructure, dependencies, releases, and requirements traceability.
+Maintain Avalonia Node Editor infrastructure, dependencies, releases, and requirements traceability.
 
-## Template DotNet Tool-Specific
+## Avalonia Node Editor-Specific
 
 ### Build
 

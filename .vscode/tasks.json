@@ -9,7 +9,7 @@
         "build",
         "--configuration",
         "Release",
-        "${workspaceFolder}/DemaConsulting.TemplateDotNetTool.slnx"
+        "${workspaceFolder}/AvaloniaNodeEditor.slnx"
       ],
       "problemMatcher": "$msCompile",
       "group": {
@@ -21,45 +21,7 @@
         "panel": "shared"
       }
     },
-    {
-      "label": "validate",
-      "command": "dotnet",
-      "type": "process",
-      "args": [
-        "run",
-        "--project",
-        "${workspaceFolder}/src/DemaConsulting.TemplateDotNetTool",
-        "--configuration",
-        "Release",
-        "--framework",
-        "net10.0",
-        "--no-build",
-        "--",
-        "--validate"
-      ],
-      "problemMatcher": "$msCompile",
-      "group": {
-        "kind": "test",
-        "isDefault": true
-      },
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
-    {
-      "label": "build and validate",
-      "dependsOn": [
-        "build",
-        "validate"
-      ],
-      "dependsOrder": "sequence",
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "shared"
-      }
-    },
+
     {
       "label": "format",
       "command": "dotnet",
@@ -140,8 +102,6 @@
         "reqstream",
         "--requirements",
         "requirements.yaml",
-        "--tests",
-        "\"test-results/**/*.trx\"",
         "--enforce"
       ],
       "problemMatcher": [],

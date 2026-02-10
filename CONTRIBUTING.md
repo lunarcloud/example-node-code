@@ -174,14 +174,13 @@ All files are spell-checked using cspell. Add project-specific terms to `.cspell
 
 Before submitting a pull request, ensure all quality checks pass:
 
-### 1. Build and Test
+### 1. Build
 
 ```bash
 dotnet build --configuration Release
-dotnet test --configuration Release
 ```
 
-All tests must pass with zero warnings.
+Build must succeed with zero warnings.
 
 ### 2. Linting
 
@@ -192,9 +191,9 @@ cspell "**/*.{md,cs}"
 yamllint -c .yamllint.yaml .
 ```
 
-### 3. Code Coverage
+### 3. Code Quality
 
-Maintain or improve code coverage. Use the `--collect "XPlat Code Coverage"` option when running tests.
+Maintain high code quality standards. Code should follow the project's style guidelines and pass all static analysis checks.
 
 ## Commit Messages
 
@@ -215,11 +214,10 @@ Examples:
 ## Pull Request Process
 
 1. **Update Documentation**: Update relevant documentation for your changes
-2. **Add Tests**: Include tests that cover your changes
-3. **Run Quality Checks**: Ensure all linters, tests, and builds pass
-4. **Submit PR**: Create a pull request with a clear description
-5. **Code Review**: Address feedback from maintainers
-6. **Merge**: Once approved, a maintainer will merge your PR
+2. **Run Quality Checks**: Ensure all linters and builds pass
+3. **Submit PR**: Create a pull request with a clear description
+4. **Code Review**: Address feedback from maintainers
+5. **Merge**: Once approved, a maintainer will merge your PR
 
 ### Pull Request Template
 
@@ -230,15 +228,14 @@ When creating a pull request, include:
 - **Related Issues**: Link to any related issues
 - **Testing**: How have you tested these changes?
 - **Checklist**:
-  - [ ] Tests added/updated
   - [ ] Documentation updated
-  - [ ] All tests pass
+  - [ ] Build passes
   - [ ] Code follows style guidelines
   - [ ] No new warnings introduced
 
 ## Requirements Management
 
-Template DotNet Tool uses [DemaConsulting.ReqStream][reqstream] for requirements traceability:
+Avalonia Node Editor uses [DemaConsulting.ReqStream][reqstream] for requirements traceability:
 
 - All requirements are defined in `requirements.yaml`
 - Each requirement should be linked to test cases
@@ -252,8 +249,7 @@ Releases are managed by project maintainers. The process includes:
 1. Version bump in project files
 2. Tag the release in Git
 3. Build and test across all supported platforms
-4. Publish NuGet package
-5. Create GitHub release with artifacts and release notes
+4. Create GitHub release with artifacts and release notes
 
 ## Getting Help
 
@@ -263,14 +259,17 @@ Releases are managed by project maintainers. The process includes:
 
 ## License
 
-By contributing to Template DotNet Tool, you agree that your contributions will be licensed under the MIT License.
+By contributing to Avalonia Node Editor, you agree that your contributions will be licensed under the MIT License.
 
-Thank you for contributing to Template DotNet Tool!
+Thank you for contributing to Avalonia Node Editor!
 
-[code-of-conduct]: https://github.com/demaconsulting/TemplateDotNetTool/blob/main/CODE_OF_CONDUCT.md
+[code-of-conduct]: https://github.com/lunarcloud/example-node-code/blob/main/CODE_OF_CONDUCT.md
 [dotnet-download]: https://dotnet.microsoft.com/download
 [csharp-conventions]: https://learn.microsoft.com/en-us/dotnet/csharp/fundamentals/coding-style/coding-conventions
 [reqstream]: https://github.com/demaconsulting/ReqStream
+[discussions]: https://github.com/lunarcloud/example-node-code/discussions
+[issues]: https://github.com/lunarcloud/example-node-code/issues
+[security]: https://github.com/lunarcloud/example-node-code/blob/main/SECURITY.md
 [discussions]: https://github.com/demaconsulting/TemplateDotNetTool/discussions
 [issues]: https://github.com/demaconsulting/TemplateDotNetTool/issues
 [security]: https://github.com/demaconsulting/TemplateDotNetTool/blob/main/SECURITY.md

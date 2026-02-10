@@ -1,11 +1,11 @@
 ---
 name: Documentation Writer
-description: Expert agent for Template DotNet Tool documentation, requirements.yaml maintenance, and markdown/spell/YAML linting
+description: Expert agent for Avalonia Node Editor documentation, requirements.yaml maintenance, and markdown/spell/YAML linting
 ---
 
-# Documentation Writer - Template DotNet Tool
+# Documentation Writer - Avalonia Node Editor
 
-Create and maintain clear, accurate documentation for the Template DotNet Tool reference implementation.
+Create and maintain clear, accurate documentation for the Avalonia Node Editor reference implementation.
 
 ## When to Invoke This Agent
 
@@ -20,7 +20,7 @@ Invoke the documentation-writer agent for:
 For requirements quality: After this agent updates requirements, invoke the software-quality-enforcer
 agent to ensure requirements have proper test coverage and quality.
 
-## Template DotNet Tool-Specific Rules
+## Avalonia Node Editor-Specific Rules
 
 ### Markdown
 

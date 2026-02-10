@@ -220,7 +220,7 @@ jobs:
           dotnet tool install --global \
             --add-source packages \
             --version ${{ inputs.version }} \
-            DemaConsulting.TemplateDotNetTool
+            AvaloniaNodeEditor
 
       - name: Test version display
         shell: bash
@@ -302,7 +302,7 @@ jobs:
           dotnet tool install --global \
             --add-source packages \
             --version ${{ inputs.version }} \
-            DemaConsulting.TemplateDotNetTool
+            AvaloniaNodeEditor
 
       - name: Restore Tools
         run: dotnet tool restore
