@@ -79,6 +79,34 @@ We follow a standard GitHub workflow for contributions:
    dotnet run --project src/AvaloniaNodeEditor/AvaloniaNodeEditor.csproj
    ```
 
+### Known Build Considerations
+
+#### Locale Warnings (NETSDK1188)
+
+On some Linux distributions (like Ubuntu 25.10) or when building with globalization-invariant mode
+(`DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1`), you may see warnings about locale resources in test platform packages:
+
+```text
+warning NETSDK1188: Package Microsoft.TestPlatform.ObjectModel 17.14.1 has a resource with the locale 'cs'.
+This locale is not recognized by .NET.
+```
+
+These warnings are **harmless** and have been suppressed in the test project configuration because:
+
+- They only affect localized resource files in test dependencies
+- They don't impact the functionality of the application or tests
+- The warnings are caused by the .NET SDK running in invariant globalization mode
+- Valid locales (like 'cs' for Czech) are flagged incorrectly in this mode
+
+If you need full localization support for development tools, you can install locale packages:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install locales-all
+```
+
+For more information, see [dotnet/sdk#37636](https://github.com/dotnet/sdk/issues/37636).
+
 ## Coding Standards
 
 ### General Guidelines
