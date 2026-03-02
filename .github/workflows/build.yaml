@@ -203,7 +203,7 @@ jobs:
 
     steps:
       - name: Download package
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: artifacts-${{ matrix.os }}
           path: packages
@@ -269,20 +269,20 @@ jobs:
           node-version: 'lts/*'
 
       - name: Download all test results
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: test-results
           pattern: '*test-results*'
         continue-on-error: true
 
       - name: Download TemplateTool package
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: artifacts-windows-latest
           path: packages
 
       - name: Download CodeQL SARIF
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: codeql-sarif
           path: codeql-results
