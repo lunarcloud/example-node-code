@@ -39,7 +39,7 @@ public partial class ArithmeticTransformNode : NodeViewModel
     }
 
     /// <summary>Computes the result from <see cref="InputA"/>, <see cref="InputB"/>, and <see cref="Operation"/>.</summary>
-    /// <returns>The computed result, or <see langword="double.NaN"/> when dividing by zero.</returns>
+    /// <returns>The computed result, or <see cref="double.NaN"/> when dividing by zero.</returns>
     public double Compute()
     {
         Result = Operation switch

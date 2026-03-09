@@ -24,7 +24,10 @@ public partial class PassFilterNode : NodeViewModel
     [ObservableProperty]
     private double _threshold;
 
-    /// <summary>The upper threshold used when <see cref="FilterType"/> is <see cref="FilterType.MidPass"/>.</summary>
+    /// <summary>
+    /// The upper threshold used when <see cref="FilterType"/> is <see cref="FilterType.MidPass"/>.
+    /// This property is ignored for <see cref="FilterType.LowPass"/> and <see cref="FilterType.HighPass"/>.
+    /// </summary>
     [ObservableProperty]
     private double _upperThreshold;
 

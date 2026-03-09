@@ -15,7 +15,7 @@ public partial class RandomNumberGeneratorNode : NodeViewModel
     [ObservableProperty]
     private double _minValue;
 
-    /// <summary>The upper bound of the generated value (inclusive).</summary>
+    /// <summary>The upper bound of the generated value (exclusive).</summary>
     [ObservableProperty]
     private double _maxValue = 1.0;
 
