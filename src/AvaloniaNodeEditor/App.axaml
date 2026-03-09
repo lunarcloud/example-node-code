@@ -15,10 +15,16 @@
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="NodeBackgroundBrush" Color="#FFFFFF"/>
                     <SolidColorBrush x:Key="NodeBorderBrush" Color="#B0B8C4"/>
+                    <!-- Background for toolbox and properties side panels -->
+                    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#F3F3F3"/>
+                    <SolidColorBrush x:Key="PanelBorderBrush" Color="#CCCCCC"/>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="NodeBackgroundBrush" Color="#1C2432"/>
                     <SolidColorBrush x:Key="NodeBorderBrush" Color="#2C3445"/>
+                    <!-- Background for toolbox and properties side panels -->
+                    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#1E1E1E"/>
+                    <SolidColorBrush x:Key="PanelBorderBrush" Color="#3A3A3C"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

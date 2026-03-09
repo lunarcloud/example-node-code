@@ -46,8 +46,8 @@
             <!-- ─── Toolbox ─────────────────────────────────────────────────── -->
             <Border Grid.Column="0"
                     BorderThickness="0,0,1,0"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
-                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
+                    BorderBrush="{DynamicResource PanelBorderBrush}"
+                    Background="{DynamicResource PanelBackgroundBrush}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top"
                                Text="Toolbox"
@@ -86,6 +86,7 @@
             <!-- ─── Node editor canvas ──────────────────────────────────────── -->
             <nodify:NodifyEditor x:Name="NodeEditorControl"
                                  Grid.Column="2"
+                                 ClipToBounds="True"
                                  x:CompileBindings="False"
                                  ItemsSource="{Binding Nodes}"
                                  Connections="{Binding Connections}"
@@ -134,7 +135,8 @@
             <!-- ─── Properties panel ────────────────────────────────────────── -->
             <Border Grid.Column="4"
                     BorderThickness="1,0,0,0"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                    BorderBrush="{DynamicResource PanelBorderBrush}"
+                    Background="{DynamicResource PanelBackgroundBrush}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top"
                                Text="Properties"
