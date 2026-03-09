@@ -1,3 +1,4 @@
+using Avalonia;
 using AvaloniaNodeEditor.ViewModels;
 
 namespace AvaloniaNodeEditor.Tests.ViewModels;
@@ -102,5 +103,54 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.Equal(5, viewModel.Nodes.Count);
+    }
+
+    [Fact]
+    public void AddNodeAt_PlacesNodeAtSpecifiedPosition()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        var expectedPosition = new Point(123, 456);
+
+        // Act
+        viewModel.AddNodeAt("Number Producer", expectedPosition);
+
+        // Assert
+        Assert.Single(viewModel.Nodes);
+        Assert.Equal(expectedPosition, viewModel.Nodes[0].Location);
+    }
+
+    [Theory]
+    [InlineData("Number Producer")]
+    [InlineData("Number Reporter")]
+    [InlineData("Arithmetic Transform")]
+    [InlineData("Random Number Generator")]
+    [InlineData("Pass Filter")]
+    public void AddNodeAt_CreatesCorrectNodeType(string nodeType)
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        var position = new Point(10, 20);
+
+        // Act
+        viewModel.AddNodeAt(nodeType, position);
+
+        // Assert
+        Assert.Single(viewModel.Nodes);
+        Assert.Equal(nodeType, viewModel.Nodes[0].Name);
+    }
+
+    [Fact]
+    public void AddNodeAt_SetsSelectedNode()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act
+        viewModel.AddNodeAt("Pass Filter", new Point(0, 0));
+
+        // Assert
+        Assert.NotNull(viewModel.SelectedNode);
+        Assert.Equal("Pass Filter", viewModel.SelectedNode.Name);
     }
 }

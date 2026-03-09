@@ -35,7 +35,7 @@ public partial class MainWindowViewModel : ViewModelBase
         "Pass Filter",
     ];
 
-    /// <summary>Adds a new node of the given type to the canvas at a default position.</summary>
+    /// <summary>Adds a new node of the given type to the canvas at a default staggered position.</summary>
     [RelayCommand]
     private void AddNode(string? nodeType)
     {
@@ -46,14 +46,21 @@ public partial class MainWindowViewModel : ViewModelBase
 
         // Stagger new nodes so they do not overlap
         var offset = new Point(60 + (Nodes.Count * 30 % 300), 60 + (Nodes.Count * 20 % 200));
+        AddNodeAt(nodeType, offset);
+    }
 
+    /// <summary>Adds a new node of the given type to the canvas at the specified canvas position.</summary>
+    /// <param name="nodeType">The display name of the node type to create (must match a <see cref="ToolboxItems"/> entry).</param>
+    /// <param name="canvasPosition">The position in canvas coordinates where the node will be placed.</param>
+    public void AddNodeAt(string nodeType, Point canvasPosition)
+    {
         NodeViewModel node = nodeType switch
         {
-            "Number Producer" => new NumberProducerNode { Location = offset },
-            "Number Reporter" => new NumberReporterNode { Location = offset },
-            "Arithmetic Transform" => new ArithmeticTransformNode { Location = offset },
-            "Random Number Generator" => new RandomNumberGeneratorNode { Location = offset },
-            "Pass Filter" => new PassFilterNode { Location = offset },
+            "Number Producer" => new NumberProducerNode { Location = canvasPosition },
+            "Number Reporter" => new NumberReporterNode { Location = canvasPosition },
+            "Arithmetic Transform" => new ArithmeticTransformNode { Location = canvasPosition },
+            "Random Number Generator" => new RandomNumberGeneratorNode { Location = canvasPosition },
+            "Pass Filter" => new PassFilterNode { Location = canvasPosition },
             _ => throw new ArgumentOutOfRangeException(nameof(nodeType), nodeType, null),
         };
 

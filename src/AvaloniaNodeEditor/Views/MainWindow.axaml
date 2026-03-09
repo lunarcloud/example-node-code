@@ -46,22 +46,31 @@
             <!-- ─── Toolbox ─────────────────────────────────────────────────── -->
             <Border Grid.Column="0"
                     BorderThickness="0,0,1,0"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}"
+                    Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top"
                                Text="Toolbox"
                                FontWeight="SemiBold"
                                Margin="8,8,8,4"/>
                     <TextBlock DockPanel.Dock="Top"
-                               Text="Double-click to add a node"
+                               Text="Drag to canvas or double-click to add"
                                FontSize="11"
                                Opacity="0.6"
-                               Margin="8,0,8,6"/>
-                    <ListBox ItemsSource="{Binding ToolboxItems}"
-                             DoubleTapped="OnToolboxDoubleTapped">
+                               Margin="8,0,8,6"
+                               TextWrapping="Wrap"/>
+                    <ListBox x:Name="ToolboxList"
+                             ItemsSource="{Binding ToolboxItems}"
+                             DoubleTapped="OnToolboxDoubleTapped"
+                             x:CompileBindings="False">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="8,6"/>
+                            </Style>
+                        </ListBox.Styles>
                         <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="x:String">
-                                <TextBlock Text="{Binding}" Padding="4,2"/>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"/>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
@@ -75,7 +84,8 @@
                           HorizontalAlignment="Stretch"/>
 
             <!-- ─── Node editor canvas ──────────────────────────────────────── -->
-            <nodify:NodifyEditor Grid.Column="2"
+            <nodify:NodifyEditor x:Name="NodeEditorControl"
+                                 Grid.Column="2"
                                  x:CompileBindings="False"
                                  ItemsSource="{Binding Nodes}"
                                  Connections="{Binding Connections}"
