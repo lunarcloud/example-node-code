@@ -48,13 +48,13 @@ jobs:
             10.x
 
       - name: Download package artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: artifacts-ubuntu-latest
           path: artifacts
 
       - name: Download documentation artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: documentation
           path: artifacts
