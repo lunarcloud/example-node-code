@@ -29,7 +29,7 @@ public partial class RandomNumberGeneratorNode : NodeViewModel
         Name = "Random Number Generator";
         Width = 200;
         Height = 90;
-        Content = Name;
+        Content = this;
         Pins = new ObservableCollection<IPin>
         {
             new PinViewModel { Name = "Output", Alignment = PinAlignment.Right, Parent = this },

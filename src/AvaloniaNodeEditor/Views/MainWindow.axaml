@@ -4,11 +4,23 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:editor="clr-namespace:NodeEditor.Controls;assembly=NodeEditorAvalonia"
+        xmlns:nodevm="clr-namespace:NodeEditor.Mvvm;assembly=NodeEditorAvalonia.Mvvm"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
         x:Class="AvaloniaNodeEditor.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Avalonia Node Editor">
+
+    <Window.DataTemplates>
+        <!-- Renders the node's Name as an inline editable label.
+             Double-click the text to enter rename mode; press Enter or click away to confirm. -->
+        <DataTemplate DataType="nodevm:NodeViewModel">
+            <editor:EditableTextBlock Text="{Binding Name}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      TextAlignment="Center" />
+        </DataTemplate>
+    </Window.DataTemplates>
 
     <Window.Styles>
         <!-- Give every Node control a visible card appearance -->

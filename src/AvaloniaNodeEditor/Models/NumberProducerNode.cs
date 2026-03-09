@@ -18,7 +18,7 @@ public partial class NumberProducerNode : NodeViewModel
         Name = "Number Producer";
         Width = 160;
         Height = 60;
-        Content = Name;
+        Content = this;
         Pins = new ObservableCollection<IPin>
         {
             new PinViewModel { Name = "Output", Alignment = PinAlignment.Right, Parent = this },

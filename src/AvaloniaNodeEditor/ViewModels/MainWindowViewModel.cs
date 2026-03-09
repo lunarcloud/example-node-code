@@ -20,6 +20,12 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Initializes a new instance of <see cref="MainWindowViewModel"/>.</summary>
     public MainWindowViewModel()
     {
+        // NodeSerializer uses Newtonsoft.Json with TypeNameHandling to round-trip our
+        // custom node types. ObservableCollection<> is passed as the concrete IList<T>
+        // implementation the serializer resolves. Clone() on DrawingNodeViewModel uses
+        // this serializer, which is required for drag-from-toolbox to place nodes.
+        var serializer = new NodeSerializer(typeof(ObservableCollection<>));
+
         var drawing = new DrawingNodeViewModel
         {
             Name = "Main",
@@ -42,9 +48,13 @@ public partial class MainWindowViewModel : ViewModelBase
             },
         };
 
+        drawing.SetSerializer(serializer);
+        drawing.SetFactory(new DrawingNodeFactory());
+
         Editor = new EditorViewModel
         {
             Drawing = drawing,
+            Serializer = serializer,
             Templates = CreateTemplates(),
         };
     }

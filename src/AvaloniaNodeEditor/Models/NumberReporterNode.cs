@@ -18,7 +18,7 @@ public partial class NumberReporterNode : NodeViewModel
         Name = "Number Reporter";
         Width = 160;
         Height = 60;
-        Content = Name;
+        Content = this;
         Pins = new ObservableCollection<IPin>
         {
             new PinViewModel { Name = "Input", Alignment = PinAlignment.Left, Parent = this },
