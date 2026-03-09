@@ -30,6 +30,6 @@
 
     <Application.Styles>
         <FluentTheme />
-        <StyleInclude Source="avares://NodeEditorAvalonia/Themes/NodeEditorTheme.axaml" />
+        <StyleInclude Source="avares://NodifyM.Avalonia/Styles/ControlStyles.axaml" />
     </Application.Styles>
 </Application>

@@ -1,18 +1,16 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using NodeEditor.Model;
-using NodeEditor.Mvvm;
+using AvaloniaNodeEditor.ViewModels;
 
 namespace AvaloniaNodeEditor.Models;
 
 /// <summary>A node that passes or blocks an input float value based on a configurable filter type and threshold.</summary>
 public partial class PassFilterNode : NodeViewModel
 {
-    /// <summary>The float value received at the input pin.</summary>
+    /// <summary>The float value received at the input connector.</summary>
     [ObservableProperty]
     private double _inputValue;
 
-    /// <summary>The filtered float value emitted at the output pin.</summary>
+    /// <summary>The filtered float value emitted at the output connector.</summary>
     [ObservableProperty]
     private double _outputValue;
 
@@ -35,14 +33,8 @@ public partial class PassFilterNode : NodeViewModel
     public PassFilterNode()
     {
         Name = "Pass Filter";
-        Width = 160;
-        Height = 90;
-        Content = Name;
-        Pins = new ObservableCollection<IPin>
-        {
-            new PinViewModel { Name = "Input", Alignment = PinAlignment.Left, Parent = this },
-            new PinViewModel { Name = "Output", Alignment = PinAlignment.Right, Parent = this },
-        };
+        Inputs.Add(new ConnectorViewModel { Name = "Input" });
+        Outputs.Add(new ConnectorViewModel { Name = "Output" });
     }
 
     /// <summary>Applies the filter to <see cref="InputValue"/> and stores the result in <see cref="OutputValue"/>.</summary>

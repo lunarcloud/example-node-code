@@ -14,11 +14,15 @@ requirements:
     title: Node Editor Interface
     description: |
       The application shall provide a visual node editor interface using
-      NodeEditorAvalonia library for creating and editing node graphs.
+      NodifyM.Avalonia library for creating and editing node graphs, with
+      input and output connectors on nodes and the ability to open a
+      properties editor for any selected node.
     type: functional
     verification: test
     rationale: |
-      Core functionality for visual node-based workflows.
+      Core functionality for visual node-based workflows. NodifyM.Avalonia is
+      an actively-maintained, Avalonia-compatible, cross-platform library
+      designed from the start for MVVM usage.
 
   - id: ANE-REQ-003
     title: MVVM Architecture

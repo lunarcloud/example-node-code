@@ -1,5 +1,4 @@
 using AvaloniaNodeEditor.Models;
-using NodeEditor.Model;
 
 namespace AvaloniaNodeEditor.Tests.Models;
 
@@ -13,13 +12,13 @@ public class PassFilterNodeTests
     }
 
     [Fact]
-    public void Constructor_HasInputAndOutputPins()
+    public void Constructor_HasInputAndOutputConnectors()
     {
         var node = new PassFilterNode();
-        Assert.NotNull(node.Pins);
-        Assert.Equal(2, node.Pins.Count);
-        Assert.Equal(PinAlignment.Left, node.Pins[0].Alignment);
-        Assert.Equal(PinAlignment.Right, node.Pins[1].Alignment);
+        Assert.Single(node.Inputs);
+        Assert.Single(node.Outputs);
+        Assert.Equal("Input", node.Inputs[0].Name);
+        Assert.Equal("Output", node.Outputs[0].Name);
     }
 
     [Fact]

@@ -1,5 +1,4 @@
 using AvaloniaNodeEditor.Models;
-using NodeEditor.Model;
 
 namespace AvaloniaNodeEditor.Tests.Models;
 
@@ -13,14 +12,14 @@ public class ArithmeticTransformNodeTests
     }
 
     [Fact]
-    public void Constructor_HasTwoInputsAndOneOutputPin()
+    public void Constructor_HasTwoInputsAndOneOutput()
     {
         var node = new ArithmeticTransformNode();
-        Assert.NotNull(node.Pins);
-        Assert.Equal(3, node.Pins.Count);
-        Assert.Equal(PinAlignment.Left, node.Pins[0].Alignment);
-        Assert.Equal(PinAlignment.Left, node.Pins[1].Alignment);
-        Assert.Equal(PinAlignment.Right, node.Pins[2].Alignment);
+        Assert.Equal(2, node.Inputs.Count);
+        Assert.Single(node.Outputs);
+        Assert.Equal("A", node.Inputs[0].Name);
+        Assert.Equal("B", node.Inputs[1].Name);
+        Assert.Equal("Result", node.Outputs[0].Name);
     }
 
     [Fact]

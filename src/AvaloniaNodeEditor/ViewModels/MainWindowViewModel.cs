@@ -1,62 +1,124 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using AvaloniaNodeEditor.Models;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using NodeEditor.Model;
-using NodeEditor.Mvvm;
+using NodifyM.Avalonia.Events;
 
 namespace AvaloniaNodeEditor.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    /// <summary>The node graph editor state including drawing canvas and node templates.</summary>
-    public EditorViewModel Editor { get; }
+    private ConnectorViewModel? _pendingSource;
 
-    /// <summary>The active drawing node graph shown in the editor canvas.</summary>
-    public IDrawingNode? Drawing => Editor.Drawing;
+    /// <summary>The collection of nodes displayed in the editor canvas.</summary>
+    public ObservableCollection<NodeViewModel> Nodes { get; } = [];
 
-    /// <summary>Initializes a new instance of <see cref="MainWindowViewModel"/>.</summary>
-    public MainWindowViewModel()
+    /// <summary>The collection of connections between node connectors.</summary>
+    public ObservableCollection<ConnectionViewModel> Connections { get; } = [];
+
+    /// <summary>The currently selected node, shown in the properties panel.</summary>
+    [ObservableProperty]
+    private NodeViewModel? _selectedNode;
+
+    /// <summary>The node types available in the toolbox.</summary>
+    public IReadOnlyList<string> ToolboxItems { get; } =
+    [
+        "Number Producer",
+        "Number Reporter",
+        "Arithmetic Transform",
+        "Random Number Generator",
+        "Pass Filter",
+    ];
+
+    /// <summary>Adds a new node of the given type to the canvas at a default position.</summary>
+    [RelayCommand]
+    private void AddNode(string? nodeType)
     {
-        // NodeSerializer uses Newtonsoft.Json with TypeNameHandling to round-trip our
-        // custom node types. ObservableCollection<> is passed as the concrete IList<T>
-        // implementation the serializer resolves. Clone() on DrawingNodeViewModel uses
-        // this serializer, which is required for drag-from-toolbox to place nodes.
-        var serializer = new NodeSerializer(typeof(ObservableCollection<>));
-
-        var drawing = new DrawingNodeViewModel
+        if (nodeType is null)
         {
-            Name = "Main",
-            X = 0,
-            Y = 0,
-            Width = 900,
-            Height = 600,
-            Nodes = new ObservableCollection<INode>(),
-            Connectors = new ObservableCollection<IConnector>(),
-            Settings = new DrawingNodeSettingsViewModel
+            return;
+        }
+
+        // Stagger new nodes so they do not overlap
+        var offset = new Point(60 + (Nodes.Count * 30 % 300), 60 + (Nodes.Count * 20 % 200));
+
+        NodeViewModel node = nodeType switch
+        {
+            "Number Producer" => new NumberProducerNode { Location = offset },
+            "Number Reporter" => new NumberReporterNode { Location = offset },
+            "Arithmetic Transform" => new ArithmeticTransformNode { Location = offset },
+            "Random Number Generator" => new RandomNumberGeneratorNode { Location = offset },
+            "Pass Filter" => new PassFilterNode { Location = offset },
+            _ => throw new ArgumentOutOfRangeException(nameof(nodeType), nodeType, null),
+        };
+
+        // Track selection changes so the properties panel stays in sync.
+        node.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(NodeViewModel.IsSelected))
             {
-                EnableSnap = true,
-                SnapX = 10,
-                SnapY = 10,
-                EnableGrid = true,
-                GridCellWidth = 20,
-                GridCellHeight = 20,
-                EnableConnections = true,
-                AllowDuplicateConnections = true,
-            },
+                if (node.IsSelected)
+                {
+                    SelectedNode = node;
+                }
+                else if (SelectedNode == node)
+                {
+                    SelectedNode = null;
+                }
+            }
         };
 
-        drawing.SetSerializer(serializer);
-        drawing.SetFactory(new DrawingNodeFactory());
+        Nodes.Add(node);
+        SelectedNode = node;
+    }
 
-        Editor = new EditorViewModel
+    /// <summary>Called by the editor when the user starts dragging a new connection from a connector.</summary>
+    [RelayCommand]
+    private void ConnectionStarted(object? source)
+    {
+        _pendingSource = source as ConnectorViewModel;
+    }
+
+    /// <summary>Called by the editor when the user finishes dragging a connection to a target connector.</summary>
+    [RelayCommand]
+    private void ConnectionCompleted(object? args)
+    {
+        ConnectorViewModel? target = args switch
         {
-            Drawing = drawing,
-            Serializer = serializer,
-            Templates = CreateTemplates(),
+            ConnectorViewModel cv => cv,
+            PendingConnectionEventArgs ea => ea.TargetConnector as ConnectorViewModel,
+            _ => null,
         };
+
+        if (_pendingSource is not null && target is not null && _pendingSource != target)
+        {
+            Connections.Add(new ConnectionViewModel(_pendingSource, target));
+            _pendingSource.IsConnected = true;
+            target.IsConnected = true;
+        }
+
+        _pendingSource = null;
+    }
+
+    /// <summary>Removes a connection from the graph.</summary>
+    [RelayCommand]
+    private void RemoveConnection(object? connection)
+    {
+        if (connection is not ConnectionViewModel conn)
+        {
+            return;
+        }
+
+        Connections.Remove(conn);
+
+        // Re-evaluate IsConnected for both endpoints
+        UpdateIsConnected(conn.Source);
+        UpdateIsConnected(conn.Target);
     }
 
     /// <summary>Quits the application.</summary>
@@ -69,40 +131,10 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    private static IList<INodeTemplate> CreateTemplates()
+    private void UpdateIsConnected(ConnectorViewModel connector)
     {
-        return new ObservableCollection<INodeTemplate>
-        {
-            new NodeTemplateViewModel
-            {
-                Title = "Number Producer",
-                Template = new NumberProducerNode(),
-                Preview = new NumberProducerNode(),
-            },
-            new NodeTemplateViewModel
-            {
-                Title = "Number Reporter",
-                Template = new NumberReporterNode(),
-                Preview = new NumberReporterNode(),
-            },
-            new NodeTemplateViewModel
-            {
-                Title = "Arithmetic Transform",
-                Template = new ArithmeticTransformNode(),
-                Preview = new ArithmeticTransformNode(),
-            },
-            new NodeTemplateViewModel
-            {
-                Title = "Random Number Generator",
-                Template = new RandomNumberGeneratorNode(),
-                Preview = new RandomNumberGeneratorNode(),
-            },
-            new NodeTemplateViewModel
-            {
-                Title = "Pass Filter",
-                Template = new PassFilterNode(),
-                Preview = new PassFilterNode(),
-            },
-        };
+        connector.IsConnected = Connections.Any(
+            c => c.Source == connector || c.Target == connector);
     }
 }
+

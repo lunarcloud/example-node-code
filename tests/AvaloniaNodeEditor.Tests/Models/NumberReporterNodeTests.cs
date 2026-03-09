@@ -1,5 +1,4 @@
 using AvaloniaNodeEditor.Models;
-using NodeEditor.Model;
 
 namespace AvaloniaNodeEditor.Tests.Models;
 
@@ -13,13 +12,12 @@ public class NumberReporterNodeTests
     }
 
     [Fact]
-    public void Constructor_HasSingleInputPin()
+    public void Constructor_HasSingleInputConnector()
     {
         var node = new NumberReporterNode();
-        Assert.NotNull(node.Pins);
-        Assert.Single(node.Pins);
-        Assert.Equal("Input", node.Pins[0].Name);
-        Assert.Equal(PinAlignment.Left, node.Pins[0].Alignment);
+        Assert.Single(node.Inputs);
+        Assert.Empty(node.Outputs);
+        Assert.Equal("Input", node.Inputs[0].Name);
     }
 
     [Fact]
