@@ -13,14 +13,10 @@
         <ResourceDictionary>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
-                    <SolidColorBrush x:Key="EditorBackground" Color="#E8ECF0"/>
-                    <SolidColorBrush x:Key="DrawingBackground" Color="#FFFFFF"/>
                     <SolidColorBrush x:Key="NodeBackgroundBrush" Color="#FFFFFF"/>
                     <SolidColorBrush x:Key="NodeBorderBrush" Color="#B0B8C4"/>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
-                    <SolidColorBrush x:Key="EditorBackground" Color="#1A1F2A"/>
-                    <SolidColorBrush x:Key="DrawingBackground" Color="#1B212E"/>
                     <SolidColorBrush x:Key="NodeBackgroundBrush" Color="#1C2432"/>
                     <SolidColorBrush x:Key="NodeBorderBrush" Color="#2C3445"/>
                 </ResourceDictionary>
