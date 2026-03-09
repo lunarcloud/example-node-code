@@ -4,11 +4,34 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:editor="clr-namespace:NodeEditor.Controls;assembly=NodeEditorAvalonia"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        xmlns:nodevm="clr-namespace:NodeEditor.Mvvm;assembly=NodeEditorAvalonia.Mvvm"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
         x:Class="AvaloniaNodeEditor.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Avalonia Node Editor - Cross Platform Demo">
+        Title="Avalonia Node Editor">
+
+    <Window.DataTemplates>
+        <!-- Renders the node's Name as an inline editable label.
+             Double-click the text to enter rename mode; press Enter or click away to confirm. -->
+        <DataTemplate DataType="nodevm:NodeViewModel">
+            <editor:EditableTextBlock Text="{Binding Name}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      TextAlignment="Center" />
+        </DataTemplate>
+    </Window.DataTemplates>
+
+    <Window.Styles>
+        <!-- Give every Node control a visible card appearance -->
+        <Style Selector="editor|Node">
+            <Setter Property="Background" Value="{DynamicResource NodeBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource NodeBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+    </Window.Styles>
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -17,14 +40,44 @@
     </Design.DataContext>
 
     <DockPanel>
-        <TextBlock DockPanel.Dock="Top" 
-                   Text="{Binding Greeting}" 
-                   HorizontalAlignment="Center" 
-                   Margin="10"
-                   FontSize="18"
-                   FontWeight="Bold"/>
-        <editor:Editor Name="EditorControl" 
-                       DrawingSource="{Binding Drawing, FallbackValue={x:Null}}" />
+        <!-- Menu bar -->
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Quit" Command="{Binding QuitCommand}"/>
+            </MenuItem>
+        </Menu>
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="220" MinWidth="150" MaxWidth="400"/>
+                <ColumnDefinition Width="4"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Toolbox panel -->
+            <Border Grid.Column="0"
+                    BorderThickness="0,0,1,0"
+                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Toolbox"
+                               FontWeight="SemiBold"
+                               Margin="8,8,8,4"/>
+                    <editor:Toolbox TemplatesSource="{Binding Editor.Templates}" />
+                </DockPanel>
+            </Border>
+
+            <!-- Splitter -->
+            <GridSplitter Grid.Column="1"
+                          ResizeDirection="Columns"
+                          Background="Transparent"
+                          HorizontalAlignment="Stretch"/>
+
+            <!-- Node editor canvas -->
+            <editor:Editor Grid.Column="2"
+                           Name="EditorControl"
+                           DrawingSource="{Binding Drawing, FallbackValue={x:Null}}" />
+        </Grid>
     </DockPanel>
 
 </Window>
