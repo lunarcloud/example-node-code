@@ -37,6 +37,7 @@ public partial class PassFilterNode : NodeViewModel
         Name = "Pass Filter";
         Width = 160;
         Height = 90;
+        Content = Name;
         Pins = new ObservableCollection<IPin>
         {
             new PinViewModel { Name = "Input", Alignment = PinAlignment.Left, Parent = this },

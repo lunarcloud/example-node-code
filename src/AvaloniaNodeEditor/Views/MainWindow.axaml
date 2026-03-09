@@ -8,7 +8,18 @@
         x:Class="AvaloniaNodeEditor.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
-        Title="Avalonia Node Editor - Cross Platform Demo">
+        Title="Avalonia Node Editor">
+
+    <Window.Styles>
+        <!-- Give every Node control a visible card appearance -->
+        <Style Selector="editor|Node">
+            <Setter Property="Background" Value="{DynamicResource NodeBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource NodeBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+    </Window.Styles>
 
     <Design.DataContext>
         <!-- This only sets the DataContext for the previewer in an IDE,
@@ -17,12 +28,13 @@
     </Design.DataContext>
 
     <DockPanel>
-        <TextBlock DockPanel.Dock="Top"
-                   Text="{Binding Greeting}"
-                   HorizontalAlignment="Center"
-                   Margin="10"
-                   FontSize="18"
-                   FontWeight="Bold"/>
+        <!-- Menu bar -->
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="_File">
+                <MenuItem Header="_Quit" Command="{Binding QuitCommand}"/>
+            </MenuItem>
+        </Menu>
+
         <Grid>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="220" MinWidth="150" MaxWidth="400"/>

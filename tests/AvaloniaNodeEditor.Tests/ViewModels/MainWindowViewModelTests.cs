@@ -15,7 +15,7 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.NotNull(viewModel);
-        Assert.Equal("Welcome to Avalonia Node Editor!", viewModel.Greeting);
+        Assert.NotNull(viewModel.Editor);
     }
 
     [Fact]

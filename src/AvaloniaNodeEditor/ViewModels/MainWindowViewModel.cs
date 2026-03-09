@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using AvaloniaNodeEditor.Models;
+using CommunityToolkit.Mvvm.Input;
 using NodeEditor.Model;
 using NodeEditor.Mvvm;
 
@@ -8,8 +11,6 @@ namespace AvaloniaNodeEditor.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    public string Greeting { get; } = "Welcome to Avalonia Node Editor!";
-
     /// <summary>The node graph editor state including drawing canvas and node templates.</summary>
     public EditorViewModel Editor { get; }
 
@@ -46,6 +47,16 @@ public partial class MainWindowViewModel : ViewModelBase
             Drawing = drawing,
             Templates = CreateTemplates(),
         };
+    }
+
+    /// <summary>Quits the application.</summary>
+    [RelayCommand]
+    private static void Quit()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
     }
 
     private static IList<INodeTemplate> CreateTemplates()

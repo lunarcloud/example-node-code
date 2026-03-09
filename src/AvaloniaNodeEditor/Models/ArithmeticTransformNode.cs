@@ -30,6 +30,7 @@ public partial class ArithmeticTransformNode : NodeViewModel
         Name = "Arithmetic Transform";
         Width = 200;
         Height = 90;
+        Content = Name;
         Pins = new ObservableCollection<IPin>
         {
             new PinViewModel { Name = "A", Alignment = PinAlignment.Left, Parent = this },
