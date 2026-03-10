@@ -84,9 +84,10 @@
                           HorizontalAlignment="Stretch"/>
 
             <!-- ─── Node editor canvas ──────────────────────────────────────── -->
+            <!-- Border provides explicit layout bounds so NodifyEditor's infinite Canvas
+                 is clipped to this Grid column and cannot bleed over adjacent panels. -->
+            <Border Grid.Column="2" ClipToBounds="True">
             <nodify:NodifyEditor x:Name="NodeEditorControl"
-                                 Grid.Column="2"
-                                 ClipToBounds="True"
                                  x:CompileBindings="False"
                                  ItemsSource="{Binding Nodes}"
                                  Connections="{Binding Connections}"
@@ -125,6 +126,7 @@
                     </DataTemplate>
                 </nodify:NodifyEditor.PendingConnectionTemplate>
             </nodify:NodifyEditor>
+            </Border>
 
             <!-- Splitter right -->
             <GridSplitter Grid.Column="3"
