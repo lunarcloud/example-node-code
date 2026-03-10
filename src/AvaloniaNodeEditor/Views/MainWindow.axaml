@@ -98,8 +98,8 @@
                 <nodify:NodifyEditor.ItemTemplate>
                     <DataTemplate>
                         <nodify:Node Header="{Binding Name}"
-                                     Location="{Binding Location}"
-                                     IsSelected="{Binding IsSelected}"
+                                     Location="{Binding Location, Mode=TwoWay}"
+                                     IsSelected="{Binding IsSelected, Mode=TwoWay}"
                                      Input="{Binding Inputs}"
                                      Output="{Binding Outputs}"
                                      InputConnectorTemplate="{StaticResource ConnectorTemplate}"

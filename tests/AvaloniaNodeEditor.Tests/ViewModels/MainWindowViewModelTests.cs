@@ -155,6 +155,52 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public void NodeViewModel_Location_IsMutable()
+    {
+        // Arrange — NodifyEditor.NodeDragging sets node.Location directly on the control;
+        // the TwoWay binding propagates that back to the ViewModel.Location.
+        // This test verifies the ViewModel's Location setter is observable and writable.
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        var node = viewModel.Nodes[0];
+        bool propertyChangedFired = false;
+        node.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(NodeViewModel.Location))
+                propertyChangedFired = true;
+        };
+
+        // Act — simulate what the TwoWay binding does when NodifyEditor moves a node
+        node.Location = new Point(99, 88);
+
+        // Assert
+        Assert.Equal(new Point(99, 88), node.Location);
+        Assert.True(propertyChangedFired);
+    }
+
+    [Fact]
+    public void NodeViewModel_IsSelected_IsMutable()
+    {
+        // Arrange — NodifyEditor.SelectItem sets node.IsSelected directly on the control;
+        // the TwoWay binding propagates that back to the ViewModel.IsSelected.
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Reporter", new Point(0, 0));
+        var node = viewModel.Nodes[0];
+        bool propertyChangedFired = false;
+        node.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(NodeViewModel.IsSelected))
+                propertyChangedFired = true;
+        };
+
+        // Act — simulate what the TwoWay binding does when the node is selected
+        node.IsSelected = !node.IsSelected;
+
+        // Assert
+        Assert.True(propertyChangedFired);
+    }
+
+    [Fact]
     public void ConnectionCompleted_WithSourceTargetTuple_CreatesConnection()
     {
         // Arrange — NodifyEditor fires ConnectionCompletedCommand with (source, target) tuple
