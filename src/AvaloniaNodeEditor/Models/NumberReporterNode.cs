@@ -1,7 +1,5 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using NodeEditor.Model;
-using NodeEditor.Mvvm;
+using AvaloniaNodeEditor.ViewModels;
 
 namespace AvaloniaNodeEditor.Models;
 
@@ -16,12 +14,6 @@ public partial class NumberReporterNode : NodeViewModel
     public NumberReporterNode()
     {
         Name = "Number Reporter";
-        Width = 160;
-        Height = 60;
-        Content = this;
-        Pins = new ObservableCollection<IPin>
-        {
-            new PinViewModel { Name = "Input", Alignment = PinAlignment.Left, Parent = this },
-        };
+        Inputs.Add(new ConnectorViewModel { Name = "Input" });
     }
 }

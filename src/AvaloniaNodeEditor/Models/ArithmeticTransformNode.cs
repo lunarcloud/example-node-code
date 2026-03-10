@@ -1,7 +1,5 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using NodeEditor.Model;
-using NodeEditor.Mvvm;
+using AvaloniaNodeEditor.ViewModels;
 
 namespace AvaloniaNodeEditor.Models;
 
@@ -28,15 +26,9 @@ public partial class ArithmeticTransformNode : NodeViewModel
     public ArithmeticTransformNode()
     {
         Name = "Arithmetic Transform";
-        Width = 200;
-        Height = 90;
-        Content = Name;
-        Pins = new ObservableCollection<IPin>
-        {
-            new PinViewModel { Name = "A", Alignment = PinAlignment.Left, Parent = this },
-            new PinViewModel { Name = "B", Alignment = PinAlignment.Left, Parent = this },
-            new PinViewModel { Name = "Result", Alignment = PinAlignment.Right, Parent = this },
-        };
+        Inputs.Add(new ConnectorViewModel { Name = "A" });
+        Inputs.Add(new ConnectorViewModel { Name = "B" });
+        Outputs.Add(new ConnectorViewModel { Name = "Result" });
     }
 
     /// <summary>Computes the result from <see cref="InputA"/>, <see cref="InputB"/>, and <see cref="Operation"/>.</summary>

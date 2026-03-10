@@ -1,41 +1,25 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:AvaloniaNodeEditor.ViewModels"
+        xmlns:models="using:AvaloniaNodeEditor.Models"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:editor="clr-namespace:NodeEditor.Controls;assembly=NodeEditorAvalonia"
-        xmlns:nodevm="clr-namespace:NodeEditor.Mvvm;assembly=NodeEditorAvalonia.Mvvm"
-        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="700"
+        xmlns:nodify="clr-namespace:NodifyM.Avalonia.Controls;assembly=NodifyM.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="800"
         x:Class="AvaloniaNodeEditor.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="Avalonia Node Editor">
 
-    <Window.DataTemplates>
-        <!-- Renders the node's Name as an inline editable label.
-             Double-click the text to enter rename mode; press Enter or click away to confirm. -->
-        <DataTemplate DataType="nodevm:NodeViewModel">
-            <editor:EditableTextBlock Text="{Binding Name}"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      TextAlignment="Center" />
+    <!-- Connector display template shared by all nodes -->
+    <Window.Resources>
+        <DataTemplate x:Key="ConnectorTemplate" x:DataType="vm:ConnectorViewModel">
+            <nodify:Connector IsConnected="{Binding IsConnected}"
+                              Anchor="{Binding Anchor, Mode=TwoWay}" />
         </DataTemplate>
-    </Window.DataTemplates>
-
-    <Window.Styles>
-        <!-- Give every Node control a visible card appearance -->
-        <Style Selector="editor|Node">
-            <Setter Property="Background" Value="{DynamicResource NodeBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource NodeBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="6"/>
-            <Setter Property="Padding" Value="4"/>
-        </Style>
-    </Window.Styles>
+    </Window.Resources>
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
@@ -49,35 +33,214 @@
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220" MinWidth="150" MaxWidth="400"/>
+                <!-- Toolbox -->
+                <ColumnDefinition Width="200" MinWidth="140" MaxWidth="360"/>
                 <ColumnDefinition Width="4"/>
+                <!-- Node canvas -->
                 <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="4"/>
+                <!-- Properties panel -->
+                <ColumnDefinition Width="240" MinWidth="160" MaxWidth="400"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Toolbox panel -->
+            <!-- ─── Toolbox ─────────────────────────────────────────────────── -->
             <Border Grid.Column="0"
                     BorderThickness="0,0,1,0"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseMediumLowBrush}">
+                    BorderBrush="{DynamicResource PanelBorderBrush}"
+                    Background="{DynamicResource PanelBackgroundBrush}">
                 <DockPanel>
                     <TextBlock DockPanel.Dock="Top"
                                Text="Toolbox"
                                FontWeight="SemiBold"
                                Margin="8,8,8,4"/>
-                    <editor:Toolbox TemplatesSource="{Binding Editor.Templates}" />
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Drag to canvas or double-click to add"
+                               FontSize="11"
+                               Opacity="0.6"
+                               Margin="8,0,8,6"
+                               TextWrapping="Wrap"/>
+                    <ListBox x:Name="ToolboxList"
+                             ItemsSource="{Binding ToolboxItems}"
+                             DoubleTapped="OnToolboxDoubleTapped"
+                             x:CompileBindings="False">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Padding" Value="8,6"/>
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
                 </DockPanel>
             </Border>
 
-            <!-- Splitter -->
+            <!-- Splitter left -->
             <GridSplitter Grid.Column="1"
                           ResizeDirection="Columns"
                           Background="Transparent"
                           HorizontalAlignment="Stretch"/>
 
-            <!-- Node editor canvas -->
-            <editor:Editor Grid.Column="2"
-                           Name="EditorControl"
-                           DrawingSource="{Binding Drawing, FallbackValue={x:Null}}" />
+            <!-- ─── Node editor canvas ──────────────────────────────────────── -->
+            <!-- Border provides explicit layout bounds so NodifyEditor's infinite Canvas
+                 is clipped to this Grid column and cannot bleed over adjacent panels. -->
+            <Border Grid.Column="2" ClipToBounds="True">
+            <nodify:NodifyEditor x:Name="NodeEditorControl"
+                                 x:CompileBindings="False"
+                                 ItemsSource="{Binding Nodes}"
+                                 Connections="{Binding Connections}"
+                                 ConnectionCompletedCommand="{Binding ConnectionCompletedCommand}"
+                                 RemoveConnectionCommand="{Binding RemoveConnectionCommand}">
+
+                <!-- Template for each node on the canvas -->
+                <nodify:NodifyEditor.ItemTemplate>
+                    <DataTemplate>
+                        <nodify:Node Header="{Binding Name}"
+                                     Location="{Binding Location, Mode=TwoWay}"
+                                     IsSelected="{Binding IsSelected, Mode=TwoWay}"
+                                     Input="{Binding Inputs}"
+                                     Output="{Binding Outputs}"
+                                     InputConnectorTemplate="{StaticResource ConnectorTemplate}"
+                                     OutputConnectorTemplate="{StaticResource ConnectorTemplate}" />
+                    </DataTemplate>
+                </nodify:NodifyEditor.ItemTemplate>
+
+                <!-- Template for drawn connections -->
+                <nodify:NodifyEditor.ConnectionTemplate>
+                    <DataTemplate>
+                        <nodify:Connection Source="{Binding Source.Anchor}"
+                                           Target="{Binding Target.Anchor}" />
+                    </DataTemplate>
+                </nodify:NodifyEditor.ConnectionTemplate>
+
+                <!-- Template for the in-progress (pending) connection -->
+                <nodify:NodifyEditor.PendingConnectionTemplate>
+                    <DataTemplate>
+                        <nodify:PendingConnection AllowOnlyConnectors="True" />
+                    </DataTemplate>
+                </nodify:NodifyEditor.PendingConnectionTemplate>
+            </nodify:NodifyEditor>
+            </Border>
+
+            <!-- Splitter right -->
+            <GridSplitter Grid.Column="3"
+                          ResizeDirection="Columns"
+                          Background="Transparent"
+                          HorizontalAlignment="Stretch"/>
+
+            <!-- ─── Properties panel ────────────────────────────────────────── -->
+            <Border Grid.Column="4"
+                    BorderThickness="1,0,0,0"
+                    BorderBrush="{DynamicResource PanelBorderBrush}"
+                    Background="{DynamicResource PanelBackgroundBrush}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Properties"
+                               FontWeight="SemiBold"
+                               Margin="8,8,8,4"/>
+
+                    <!-- Empty state hint -->
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="Select a node to view its properties."
+                               IsVisible="{Binding SelectedNode, Converter={x:Static ObjectConverters.IsNull}}"
+                               Opacity="0.5"
+                               Margin="8,4"
+                               TextWrapping="Wrap"/>
+
+                    <!-- Node-specific properties -->
+                    <ScrollViewer IsVisible="{Binding SelectedNode, Converter={x:Static ObjectConverters.IsNotNull}}">
+                        <ContentControl Content="{Binding SelectedNode}">
+                            <ContentControl.DataTemplates>
+
+                                <!-- Number Producer properties -->
+                                <DataTemplate DataType="models:NumberProducerNode">
+                                    <StackPanel Margin="8,4" Spacing="6">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Value"/>
+                                        <NumericUpDown Value="{Binding Value}"
+                                                       FormatString="0.##"
+                                                       Increment="0.1"/>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- Number Reporter properties -->
+                                <DataTemplate DataType="models:NumberReporterNode">
+                                    <StackPanel Margin="8,4" Spacing="6">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Value (read-only)"/>
+                                        <TextBox Text="{Binding Value, StringFormat='0.##'}"
+                                                 IsReadOnly="True"/>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- Arithmetic Transform properties -->
+                                <DataTemplate DataType="models:ArithmeticTransformNode">
+                                    <StackPanel Margin="8,4" Spacing="6">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Operation"/>
+                                        <ComboBox ItemsSource="{x:Static models:ArithmeticOperationValues.All}"
+                                                  SelectedItem="{Binding Operation}"
+                                                  HorizontalAlignment="Stretch"/>
+                                        <TextBlock Text="Input A"/>
+                                        <NumericUpDown Value="{Binding InputA}"
+                                                       FormatString="0.##"
+                                                       Increment="0.1"/>
+                                        <TextBlock Text="Input B"/>
+                                        <NumericUpDown Value="{Binding InputB}"
+                                                       FormatString="0.##"
+                                                       Increment="0.1"/>
+                                        <TextBlock Text="Result (read-only)"/>
+                                        <TextBox Text="{Binding Result, StringFormat='0.##'}"
+                                                 IsReadOnly="True"/>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- Random Number Generator properties -->
+                                <DataTemplate DataType="models:RandomNumberGeneratorNode">
+                                    <StackPanel Margin="8,4" Spacing="6">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Min Value"/>
+                                        <NumericUpDown Value="{Binding MinValue}"
+                                                       FormatString="0.##"
+                                                       Increment="0.1"/>
+                                        <TextBlock Text="Max Value"/>
+                                        <NumericUpDown Value="{Binding MaxValue}"
+                                                       FormatString="0.##"
+                                                       Increment="0.1"/>
+                                        <TextBlock Text="Last Generated Value (read-only)"/>
+                                        <TextBox Text="{Binding Value, StringFormat='0.##'}"
+                                                 IsReadOnly="True"/>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- Pass Filter properties -->
+                                <DataTemplate DataType="models:PassFilterNode">
+                                    <StackPanel Margin="8,4" Spacing="6">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Filter Type"/>
+                                        <ComboBox ItemsSource="{x:Static models:FilterTypeValues.All}"
+                                                  SelectedItem="{Binding FilterType}"
+                                                  HorizontalAlignment="Stretch"/>
+                                        <TextBlock Text="Threshold"/>
+                                        <NumericUpDown Value="{Binding Threshold}"
+                                                       FormatString="0.##"
+                                                       Increment="0.1"/>
+                                        <TextBlock Text="Upper Threshold (MidPass only)"/>
+                                        <NumericUpDown Value="{Binding UpperThreshold}"
+                                                       FormatString="0.##"
+                                                       Increment="0.1"/>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                            </ContentControl.DataTemplates>
+                        </ContentControl>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
         </Grid>
     </DockPanel>
 
 </Window>
+

@@ -1,8 +1,6 @@
 using System;
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using NodeEditor.Model;
-using NodeEditor.Mvvm;
+using AvaloniaNodeEditor.ViewModels;
 
 namespace AvaloniaNodeEditor.Models;
 
@@ -27,13 +25,7 @@ public partial class RandomNumberGeneratorNode : NodeViewModel
     public RandomNumberGeneratorNode()
     {
         Name = "Random Number Generator";
-        Width = 200;
-        Height = 90;
-        Content = this;
-        Pins = new ObservableCollection<IPin>
-        {
-            new PinViewModel { Name = "Output", Alignment = PinAlignment.Right, Parent = this },
-        };
+        Outputs.Add(new ConnectorViewModel { Name = "Output" });
     }
 
     /// <summary>Generates a new random value within [<see cref="MinValue"/>, <see cref="MaxValue"/>].</summary>

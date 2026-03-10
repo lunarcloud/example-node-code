@@ -1,5 +1,4 @@
 using AvaloniaNodeEditor.Models;
-using NodeEditor.Model;
 
 namespace AvaloniaNodeEditor.Tests.Models;
 
@@ -13,13 +12,12 @@ public class RandomNumberGeneratorNodeTests
     }
 
     [Fact]
-    public void Constructor_HasSingleOutputPin()
+    public void Constructor_HasSingleOutputConnector()
     {
         var node = new RandomNumberGeneratorNode();
-        Assert.NotNull(node.Pins);
-        Assert.Single(node.Pins);
-        Assert.Equal("Output", node.Pins[0].Name);
-        Assert.Equal(PinAlignment.Right, node.Pins[0].Alignment);
+        Assert.Empty(node.Inputs);
+        Assert.Single(node.Outputs);
+        Assert.Equal("Output", node.Outputs[0].Name);
     }
 
     [Fact]
