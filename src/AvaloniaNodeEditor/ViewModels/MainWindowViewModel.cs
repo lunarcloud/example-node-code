@@ -7,14 +7,11 @@ using Avalonia.Controls.ApplicationLifetimes;
 using AvaloniaNodeEditor.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using NodifyM.Avalonia.Events;
 
 namespace AvaloniaNodeEditor.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private ConnectorViewModel? _pendingSource;
-
     /// <summary>The collection of nodes displayed in the editor canvas.</summary>
     public ObservableCollection<NodeViewModel> Nodes { get; } = [];
 
@@ -84,32 +81,22 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedNode = node;
     }
 
-    /// <summary>Called by the editor when the user starts dragging a new connection from a connector.</summary>
-    [RelayCommand]
-    private void ConnectionStarted(object? source)
-    {
-        _pendingSource = source as ConnectorViewModel;
-    }
-
-    /// <summary>Called by the editor when the user finishes dragging a connection to a target connector.</summary>
+    /// <summary>Called by the editor when the user finishes dragging a connection to a target connector.
+    /// <para>The editor passes a <c>(source, target)</c> tuple as the argument.</para></summary>
     [RelayCommand]
     private void ConnectionCompleted(object? args)
     {
-        ConnectorViewModel? target = args switch
+        if (args is not (ConnectorViewModel source, object targetObj) || targetObj is not ConnectorViewModel target)
         {
-            ConnectorViewModel cv => cv,
-            PendingConnectionEventArgs ea => ea.TargetConnector as ConnectorViewModel,
-            _ => null,
-        };
-
-        if (_pendingSource is not null && target is not null && _pendingSource != target)
-        {
-            Connections.Add(new ConnectionViewModel(_pendingSource, target));
-            _pendingSource.IsConnected = true;
-            target.IsConnected = true;
+            return;
         }
 
-        _pendingSource = null;
+        if (source != target)
+        {
+            Connections.Add(new ConnectionViewModel(source, target));
+            source.IsConnected = true;
+            target.IsConnected = true;
+        }
     }
 
     /// <summary>Removes a connection from the graph.</summary>

@@ -153,4 +153,83 @@ public class MainWindowViewModelTests
         Assert.NotNull(viewModel.SelectedNode);
         Assert.Equal("Pass Filter", viewModel.SelectedNode.Name);
     }
+
+    [Fact]
+    public void ConnectionCompleted_WithSourceTargetTuple_CreatesConnection()
+    {
+        // Arrange — NodifyEditor fires ConnectionCompletedCommand with (source, target) tuple
+        var viewModel = new MainWindowViewModel();
+        var source = new ConnectorViewModel { Name = "out" };
+        var target = new ConnectorViewModel { Name = "in" };
+
+        // Act
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+
+        // Assert
+        Assert.Single(viewModel.Connections);
+        Assert.Same(source, viewModel.Connections[0].Source);
+        Assert.Same(target, viewModel.Connections[0].Target);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_WithSourceTargetTuple_SetsIsConnected()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        var source = new ConnectorViewModel { Name = "out" };
+        var target = new ConnectorViewModel { Name = "in" };
+
+        // Act
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+
+        // Assert
+        Assert.True(source.IsConnected);
+        Assert.True(target.IsConnected);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_SameSourceAndTarget_DoesNotCreateConnection()
+    {
+        // Arrange — self-loops should be rejected
+        var viewModel = new MainWindowViewModel();
+        var connector = new ConnectorViewModel { Name = "out" };
+
+        // Act
+        viewModel.ConnectionCompletedCommand.Execute((connector, connector));
+
+        // Assert
+        Assert.Empty(viewModel.Connections);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_NullArg_DoesNotThrowOrCreateConnection()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act
+        viewModel.ConnectionCompletedCommand.Execute(null);
+
+        // Assert
+        Assert.Empty(viewModel.Connections);
+    }
+
+    [Fact]
+    public void RemoveConnection_RemovesConnectionAndClearsIsConnected()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        var source = new ConnectorViewModel { Name = "out" };
+        var target = new ConnectorViewModel { Name = "in" };
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+        Assert.Single(viewModel.Connections);
+
+        // Act
+        viewModel.RemoveConnectionCommand.Execute(viewModel.Connections[0]);
+
+        // Assert
+        Assert.Empty(viewModel.Connections);
+        Assert.False(source.IsConnected);
+        Assert.False(target.IsConnected);
+    }
 }

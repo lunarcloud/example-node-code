@@ -91,7 +91,6 @@
                                  x:CompileBindings="False"
                                  ItemsSource="{Binding Nodes}"
                                  Connections="{Binding Connections}"
-                                 ConnectionStartedCommand="{Binding ConnectionStartedCommand}"
                                  ConnectionCompletedCommand="{Binding ConnectionCompletedCommand}"
                                  RemoveConnectionCommand="{Binding RemoveConnectionCommand}">
 
@@ -119,10 +118,7 @@
                 <!-- Template for the in-progress (pending) connection -->
                 <nodify:NodifyEditor.PendingConnectionTemplate>
                     <DataTemplate>
-                        <nodify:PendingConnection
-                            StartedCommand="{Binding $parent[nodify:NodifyEditor].DataContext.ConnectionStartedCommand}"
-                            CompletedCommand="{Binding $parent[nodify:NodifyEditor].DataContext.ConnectionCompletedCommand}"
-                            AllowOnlyConnectors="True" />
+                        <nodify:PendingConnection AllowOnlyConnectors="True" />
                     </DataTemplate>
                 </nodify:NodifyEditor.PendingConnectionTemplate>
             </nodify:NodifyEditor>
