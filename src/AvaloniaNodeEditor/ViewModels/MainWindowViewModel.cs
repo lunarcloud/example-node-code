@@ -63,20 +63,7 @@ public partial class MainWindowViewModel : ViewModelBase
         };
 
         // Track selection changes so the properties panel stays in sync.
-        node.PropertyChanged += (s, e) =>
-        {
-            if (e.PropertyName == nameof(NodeViewModel.IsSelected))
-            {
-                if (node.IsSelected)
-                {
-                    SelectedNode = node;
-                }
-                else if (SelectedNode == node)
-                {
-                    SelectedNode = null;
-                }
-            }
-        };
+        TrackNodeSelection(node);
 
         Nodes.Add(node);
         SelectedNode = node;
@@ -232,20 +219,7 @@ public partial class MainWindowViewModel : ViewModelBase
             };
 
             // Track selection changes so the properties panel stays in sync.
-            node.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(NodeViewModel.IsSelected))
-                {
-                    if (node.IsSelected)
-                    {
-                        SelectedNode = node;
-                    }
-                    else if (SelectedNode == node)
-                    {
-                        SelectedNode = null;
-                    }
-                }
-            };
+            TrackNodeSelection(node);
 
             Nodes.Add(node);
         }
@@ -356,6 +330,26 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         return (-1, false, -1);
+    }
+
+    /// <summary>Subscribes to <paramref name="node"/>'s PropertyChanged so the properties panel
+    /// stays in sync with the selected node.</summary>
+    private void TrackNodeSelection(NodeViewModel node)
+    {
+        node.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(NodeViewModel.IsSelected))
+            {
+                if (node.IsSelected)
+                {
+                    SelectedNode = node;
+                }
+                else if (SelectedNode == node)
+                {
+                    SelectedNode = null;
+                }
+            }
+        };
     }
 
     private void UpdateIsConnected(ConnectorViewModel connector)

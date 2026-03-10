@@ -178,6 +178,7 @@ public partial class MainWindow : Window
         await using var stream = await file.OpenWriteAsync();
         await using var writer = new StreamWriter(stream);
         await writer.WriteAsync(json);
+        await writer.FlushAsync();
     }
 
     /// <summary>Loads a node graph from a JSON file chosen by the user.</summary>
