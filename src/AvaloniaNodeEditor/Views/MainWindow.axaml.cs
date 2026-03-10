@@ -1,8 +1,11 @@
 using System;
+using System.IO;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using AvaloniaNodeEditor.ViewModels;
 using NodifyM.Avalonia.Controls;
 
@@ -138,5 +141,69 @@ public partial class MainWindow : Window
         {
             vm.AddNodeCommand.Execute(nodeType);
         }
+    }
+
+    // ── Save / Load ────────────────────────────────────────────────────────
+
+    /// <summary>The file type filter for the save/load file dialogs.</summary>
+    private static readonly FilePickerFileType JsonFileType = new("JSON Files")
+    {
+        Patterns = ["*.json"],
+        MimeTypes = ["application/json"],
+    };
+
+    /// <summary>Saves the current node graph to a JSON file chosen by the user.</summary>
+    private async void OnSaveClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+        {
+            return;
+        }
+
+        var storageProvider = StorageProvider;
+        var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "Save Node Graph",
+            DefaultExtension = "json",
+            FileTypeChoices = [JsonFileType],
+            SuggestedFileName = "node-graph",
+        });
+
+        if (file is null)
+        {
+            return;
+        }
+
+        var json = vm.SerializeGraph();
+        await using var stream = await file.OpenWriteAsync();
+        await using var writer = new StreamWriter(stream);
+        await writer.WriteAsync(json);
+    }
+
+    /// <summary>Loads a node graph from a JSON file chosen by the user.</summary>
+    private async void OnLoadClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+        {
+            return;
+        }
+
+        var storageProvider = StorageProvider;
+        var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Load Node Graph",
+            AllowMultiple = false,
+            FileTypeFilter = [JsonFileType],
+        });
+
+        if (files.Count == 0)
+        {
+            return;
+        }
+
+        await using var stream = await files[0].OpenReadAsync();
+        using var reader = new StreamReader(stream);
+        var json = await reader.ReadToEndAsync();
+        vm.DeserializeGraph(json);
     }
 }
