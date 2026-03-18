@@ -6,24 +6,42 @@ namespace AvaloniaNodeEditor.Models;
 /// <summary>Data transfer object representing the complete node graph state for serialization.</summary>
 public class GraphData
 {
+    /// <summary>The name of the graph/system.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; set; }
+
+    /// <summary>The version of the graph/system.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Version { get; set; }
+
     /// <summary>The nodes in the graph.</summary>
     public List<NodeData> Nodes { get; set; } = [];
+
+    /// <summary>The visual layout positions of nodes, keyed by node name.</summary>
+    public Dictionary<string, LayoutData> Layout { get; set; } = [];
 
     /// <summary>The connections between node connectors.</summary>
     public List<ConnectionData> Connections { get; set; } = [];
 }
 
-/// <summary>Data transfer object representing a single node for serialization.</summary>
-public class NodeData
+/// <summary>Data transfer object representing the visual position of a node for serialization.</summary>
+public class LayoutData
 {
-    /// <summary>The node type name (e.g., "Number Producer").</summary>
-    public string Type { get; set; } = string.Empty;
-
     /// <summary>The X coordinate of the node on the canvas.</summary>
     public double X { get; set; }
 
     /// <summary>The Y coordinate of the node on the canvas.</summary>
     public double Y { get; set; }
+}
+
+/// <summary>Data transfer object representing a single node for serialization.</summary>
+public class NodeData
+{
+    /// <summary>The unique name of this node instance.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>The node type name (e.g., "Number Producer").</summary>
+    public string Type { get; set; } = string.Empty;
 
     /// <summary>Value property for Number Producer, Number Reporter, and Random Number Generator nodes.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -74,24 +92,12 @@ public class NodeData
     public double? UpperThreshold { get; set; }
 }
 
-/// <summary>Data transfer object representing a connection between two connectors for serialization.</summary>
+/// <summary>Data transfer object representing a connection between two node connectors for serialization.</summary>
 public class ConnectionData
 {
-    /// <summary>Index of the source node in the nodes list.</summary>
-    public int SourceNodeIndex { get; set; }
+    /// <summary>The source endpoint in "NodeName.ConnectorName" format.</summary>
+    public string From { get; set; } = string.Empty;
 
-    /// <summary>True if the source connector is in the node's Outputs collection; false for Inputs.</summary>
-    public bool SourceIsOutput { get; set; }
-
-    /// <summary>Index of the source connector within the node's Inputs or Outputs collection.</summary>
-    public int SourceConnectorIndex { get; set; }
-
-    /// <summary>Index of the target node in the nodes list.</summary>
-    public int TargetNodeIndex { get; set; }
-
-    /// <summary>True if the target connector is in the node's Outputs collection; false for Inputs.</summary>
-    public bool TargetIsOutput { get; set; }
-
-    /// <summary>Index of the target connector within the node's Inputs or Outputs collection.</summary>
-    public int TargetConnectorIndex { get; set; }
+    /// <summary>The target endpoint in "NodeName.ConnectorName" format.</summary>
+    public string To { get; set; } = string.Empty;
 }

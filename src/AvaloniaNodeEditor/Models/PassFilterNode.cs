@@ -6,6 +6,9 @@ namespace AvaloniaNodeEditor.Models;
 /// <summary>A node that passes or blocks an input float value based on a configurable filter type and threshold.</summary>
 public partial class PassFilterNode : NodeViewModel
 {
+    /// <inheritdoc />
+    public override string NodeType => "Pass Filter";
+
     /// <summary>The float value received at the input connector.</summary>
     [ObservableProperty]
     private double _inputValue;

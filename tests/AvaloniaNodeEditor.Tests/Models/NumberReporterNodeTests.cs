@@ -9,6 +9,7 @@ public class NumberReporterNodeTests
     {
         var node = new NumberReporterNode();
         Assert.Equal("Number Reporter", node.Name);
+        Assert.Equal("Number Reporter", node.NodeType);
     }
 
     [Fact]

@@ -7,9 +7,16 @@ namespace AvaloniaNodeEditor.ViewModels;
 /// <summary>Base class for all node view models in the node graph.</summary>
 public abstract partial class NodeViewModel : ObservableObject
 {
-    /// <summary>The display name of the node.</summary>
+    /// <summary>The type identifier for this node (e.g. "Number Producer").</summary>
+    public abstract string NodeType { get; }
+
+    /// <summary>The unique user-editable name of this node.</summary>
     [ObservableProperty]
     private string _name = string.Empty;
+
+    /// <summary>Indicates whether this node has a duplicate name conflict with another node.</summary>
+    [ObservableProperty]
+    private bool _hasNameError;
 
     /// <summary>The position of the node on the editor canvas.</summary>
     [ObservableProperty]

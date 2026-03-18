@@ -146,6 +146,16 @@
                                FontWeight="SemiBold"
                                Margin="8,8,8,4"/>
 
+                    <!-- Graph-level properties -->
+                    <StackPanel DockPanel.Dock="Top" Margin="8,4" Spacing="4">
+                        <TextBlock Text="Graph Name" FontSize="11"/>
+                        <TextBox Text="{Binding GraphName}" Watermark="Untitled"/>
+                        <TextBlock Text="Graph Version" FontSize="11"/>
+                        <TextBox Text="{Binding GraphVersion}" Watermark="0.0.0"/>
+                    </StackPanel>
+
+                    <Separator DockPanel.Dock="Top" Margin="8,6"/>
+
                     <!-- Empty state hint -->
                     <TextBlock DockPanel.Dock="Top"
                                Text="Select a node to view its properties."
@@ -162,7 +172,13 @@
                                 <!-- Number Producer properties -->
                                 <DataTemplate DataType="models:NumberProducerNode">
                                     <StackPanel Margin="8,4" Spacing="6">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Name"/>
+                                        <TextBox Text="{Binding Name}"
+                                                 Classes.nameError="{Binding HasNameError}"/>
+                                        <TextBlock Text="Duplicate node name"
+                                                   IsVisible="{Binding HasNameError}"
+                                                   Foreground="Red" FontSize="11"/>
                                         <TextBlock Text="Value"/>
                                         <NumericUpDown Value="{Binding Value}"
                                                        FormatString="0.##"
@@ -173,7 +189,13 @@
                                 <!-- Number Reporter properties -->
                                 <DataTemplate DataType="models:NumberReporterNode">
                                     <StackPanel Margin="8,4" Spacing="6">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Name"/>
+                                        <TextBox Text="{Binding Name}"
+                                                 Classes.nameError="{Binding HasNameError}"/>
+                                        <TextBlock Text="Duplicate node name"
+                                                   IsVisible="{Binding HasNameError}"
+                                                   Foreground="Red" FontSize="11"/>
                                         <TextBlock Text="Value (read-only)"/>
                                         <TextBox Text="{Binding Value, StringFormat='0.##'}"
                                                  IsReadOnly="True"/>
@@ -183,7 +205,13 @@
                                 <!-- Arithmetic Transform properties -->
                                 <DataTemplate DataType="models:ArithmeticTransformNode">
                                     <StackPanel Margin="8,4" Spacing="6">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Name"/>
+                                        <TextBox Text="{Binding Name}"
+                                                 Classes.nameError="{Binding HasNameError}"/>
+                                        <TextBlock Text="Duplicate node name"
+                                                   IsVisible="{Binding HasNameError}"
+                                                   Foreground="Red" FontSize="11"/>
                                         <TextBlock Text="Operation"/>
                                         <ComboBox ItemsSource="{x:Static models:ArithmeticOperationValues.All}"
                                                   SelectedItem="{Binding Operation}"
@@ -205,7 +233,13 @@
                                 <!-- Random Number Generator properties -->
                                 <DataTemplate DataType="models:RandomNumberGeneratorNode">
                                     <StackPanel Margin="8,4" Spacing="6">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Name"/>
+                                        <TextBox Text="{Binding Name}"
+                                                 Classes.nameError="{Binding HasNameError}"/>
+                                        <TextBlock Text="Duplicate node name"
+                                                   IsVisible="{Binding HasNameError}"
+                                                   Foreground="Red" FontSize="11"/>
                                         <TextBlock Text="Min Value"/>
                                         <NumericUpDown Value="{Binding MinValue}"
                                                        FormatString="0.##"
@@ -223,7 +257,13 @@
                                 <!-- Pass Filter properties -->
                                 <DataTemplate DataType="models:PassFilterNode">
                                     <StackPanel Margin="8,4" Spacing="6">
-                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Name"/>
+                                        <TextBox Text="{Binding Name}"
+                                                 Classes.nameError="{Binding HasNameError}"/>
+                                        <TextBlock Text="Duplicate node name"
+                                                   IsVisible="{Binding HasNameError}"
+                                                   Foreground="Red" FontSize="11"/>
                                         <TextBlock Text="Filter Type"/>
                                         <ComboBox ItemsSource="{x:Static models:FilterTypeValues.All}"
                                                   SelectedItem="{Binding FilterType}"

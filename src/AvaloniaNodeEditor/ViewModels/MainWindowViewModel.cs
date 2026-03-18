@@ -23,6 +23,14 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private NodeViewModel? _selectedNode;
 
+    /// <summary>The name of the graph/system.</summary>
+    [ObservableProperty]
+    private string _graphName = string.Empty;
+
+    /// <summary>The version of the graph/system.</summary>
+    [ObservableProperty]
+    private string _graphVersion = string.Empty;
+
     /// <summary>The node types available in the toolbox.</summary>
     public IReadOnlyList<string> ToolboxItems { get; } =
     [
@@ -62,8 +70,11 @@ public partial class MainWindowViewModel : ViewModelBase
             _ => throw new ArgumentOutOfRangeException(nameof(nodeType), nodeType, null),
         };
 
-        // Track selection changes so the properties panel stays in sync.
+        node.Name = GenerateUniqueName(nodeType);
+
+        // Track selection and name changes.
         TrackNodeSelection(node);
+        TrackNodeName(node);
 
         Nodes.Add(node);
         SelectedNode = node;
@@ -110,6 +121,8 @@ public partial class MainWindowViewModel : ViewModelBase
         Connections.Clear();
         Nodes.Clear();
         SelectedNode = null;
+        GraphName = string.Empty;
+        GraphVersion = string.Empty;
     }
 
     /// <summary>Quits the application.</summary>
@@ -126,15 +139,18 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <returns>A JSON string representing the graph state.</returns>
     public string SerializeGraph()
     {
-        var data = new GraphData();
+        var data = new GraphData
+        {
+            Name = string.IsNullOrWhiteSpace(GraphName) ? null : GraphName,
+            Version = string.IsNullOrWhiteSpace(GraphVersion) ? null : GraphVersion,
+        };
 
         foreach (var node in Nodes)
         {
             var nodeData = new NodeData
             {
-                Type = node.Name,
-                X = node.Location.X,
-                Y = node.Location.Y,
+                Name = node.Name,
+                Type = node.NodeType,
             };
 
             switch (node)
@@ -166,26 +182,29 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             data.Nodes.Add(nodeData);
+
+            // Store layout separately
+            data.Layout[node.Name] = new LayoutData
+            {
+                X = node.Location.X,
+                Y = node.Location.Y,
+            };
         }
 
         foreach (var connection in Connections)
         {
-            var (sourceNodeIndex, sourceIsOutput, sourceConnectorIndex) = FindConnector(connection.Source);
-            var (targetNodeIndex, targetIsOutput, targetConnectorIndex) = FindConnector(connection.Target);
+            var (sourceNodeName, sourceConnectorName) = FindConnectorName(connection.Source);
+            var (targetNodeName, targetConnectorName) = FindConnectorName(connection.Target);
 
-            if (sourceNodeIndex < 0 || targetNodeIndex < 0)
+            if (sourceNodeName is null || targetNodeName is null)
             {
                 continue;
             }
 
             data.Connections.Add(new ConnectionData
             {
-                SourceNodeIndex = sourceNodeIndex,
-                SourceIsOutput = sourceIsOutput,
-                SourceConnectorIndex = sourceConnectorIndex,
-                TargetNodeIndex = targetNodeIndex,
-                TargetIsOutput = targetIsOutput,
-                TargetConnectorIndex = targetConnectorIndex,
+                From = $"{sourceNodeName}.{sourceConnectorName}",
+                To = $"{targetNodeName}.{targetConnectorName}",
             });
         }
 
@@ -204,10 +223,18 @@ public partial class MainWindowViewModel : ViewModelBase
         Nodes.Clear();
         SelectedNode = null;
 
+        // Restore graph-level properties
+        GraphName = data.Name ?? string.Empty;
+        GraphVersion = data.Version ?? string.Empty;
+
         // Restore nodes
         foreach (var nodeData in data.Nodes)
         {
-            var position = new Point(nodeData.X, nodeData.Y);
+            // Resolve layout position from the layout dictionary
+            var position = data.Layout.TryGetValue(nodeData.Name, out var layoutData)
+                ? new Point(layoutData.X, layoutData.Y)
+                : default;
+
             NodeViewModel node = nodeData.Type switch
             {
                 "Number Producer" => CreateNumberProducer(nodeData, position),
@@ -218,8 +245,11 @@ public partial class MainWindowViewModel : ViewModelBase
                 _ => throw new JsonException($"Unknown node type: {nodeData.Type}"),
             };
 
-            // Track selection changes so the properties panel stays in sync.
+            node.Name = nodeData.Name;
+
+            // Track selection and name changes.
             TrackNodeSelection(node);
+            TrackNodeName(node);
 
             Nodes.Add(node);
         }
@@ -227,30 +257,45 @@ public partial class MainWindowViewModel : ViewModelBase
         // Restore connections
         foreach (var connectionData in data.Connections)
         {
-            if (connectionData.SourceNodeIndex < 0 || connectionData.SourceNodeIndex >= Nodes.Count ||
-                connectionData.TargetNodeIndex < 0 || connectionData.TargetNodeIndex >= Nodes.Count)
+            var source = ResolveConnector(connectionData.From);
+            var target = ResolveConnector(connectionData.To);
+
+            if (source is null || target is null)
             {
                 continue;
             }
-
-            var sourceNode = Nodes[connectionData.SourceNodeIndex];
-            var targetNode = Nodes[connectionData.TargetNodeIndex];
-
-            var sourceConnectors = connectionData.SourceIsOutput ? sourceNode.Outputs : sourceNode.Inputs;
-            var targetConnectors = connectionData.TargetIsOutput ? targetNode.Outputs : targetNode.Inputs;
-
-            if (connectionData.SourceConnectorIndex < 0 || connectionData.SourceConnectorIndex >= sourceConnectors.Count ||
-                connectionData.TargetConnectorIndex < 0 || connectionData.TargetConnectorIndex >= targetConnectors.Count)
-            {
-                continue;
-            }
-
-            var source = sourceConnectors[connectionData.SourceConnectorIndex];
-            var target = targetConnectors[connectionData.TargetConnectorIndex];
 
             Connections.Add(new ConnectionViewModel(source, target));
             source.IsConnected = true;
             target.IsConnected = true;
+        }
+
+        ValidateAllNodeNames();
+    }
+
+    /// <summary>Generates a unique default name for a new node of the given type.</summary>
+    internal string GenerateUniqueName(string nodeType)
+    {
+        int index = 1;
+        while (Nodes.Any(n => n.Name == $"{nodeType} {index}"))
+        {
+            index++;
+        }
+
+        return $"{nodeType} {index}";
+    }
+
+    /// <summary>Validates all node names for uniqueness and sets <see cref="NodeViewModel.HasNameError"/> accordingly.</summary>
+    internal void ValidateAllNodeNames()
+    {
+        var nameGroups = Nodes.GroupBy(n => n.Name);
+        foreach (var group in nameGroups)
+        {
+            bool hasDuplicate = group.Count() > 1;
+            foreach (var node in group)
+            {
+                node.HasNameError = hasDuplicate;
+            }
         }
     }
 
@@ -312,24 +357,51 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
-    private (int nodeIndex, bool isOutput, int connectorIndex) FindConnector(ConnectorViewModel connector)
+    /// <summary>Finds the node name and connector name for a given connector view model.</summary>
+    private (string? nodeName, string? connectorName) FindConnectorName(ConnectorViewModel connector)
     {
-        for (int i = 0; i < Nodes.Count; i++)
+        foreach (var node in Nodes)
         {
-            var outputIdx = Nodes[i].Outputs.IndexOf(connector);
-            if (outputIdx >= 0)
+            foreach (var output in node.Outputs)
             {
-                return (i, true, outputIdx);
+                if (output == connector)
+                {
+                    return (node.Name, output.Name);
+                }
             }
 
-            var inputIdx = Nodes[i].Inputs.IndexOf(connector);
-            if (inputIdx >= 0)
+            foreach (var input in node.Inputs)
             {
-                return (i, false, inputIdx);
+                if (input == connector)
+                {
+                    return (node.Name, input.Name);
+                }
             }
         }
 
-        return (-1, false, -1);
+        return (null, null);
+    }
+
+    /// <summary>Resolves a connector from a "NodeName.ConnectorName" string.</summary>
+    private ConnectorViewModel? ResolveConnector(string endpoint)
+    {
+        var dotIndex = endpoint.LastIndexOf('.');
+        if (dotIndex < 0)
+        {
+            return null;
+        }
+
+        var nodeName = endpoint[..dotIndex];
+        var connectorName = endpoint[(dotIndex + 1)..];
+
+        var node = Nodes.FirstOrDefault(n => n.Name == nodeName);
+        if (node is null)
+        {
+            return null;
+        }
+
+        return node.Outputs.FirstOrDefault(c => c.Name == connectorName)
+            ?? node.Inputs.FirstOrDefault(c => c.Name == connectorName);
     }
 
     /// <summary>Subscribes to <paramref name="node"/>'s PropertyChanged so the properties panel
@@ -348,6 +420,19 @@ public partial class MainWindowViewModel : ViewModelBase
                 {
                     SelectedNode = null;
                 }
+            }
+        };
+    }
+
+    /// <summary>Subscribes to <paramref name="node"/>'s PropertyChanged to revalidate
+    /// name uniqueness when the node name changes.</summary>
+    private void TrackNodeName(NodeViewModel node)
+    {
+        node.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(NodeViewModel.Name))
+            {
+                ValidateAllNodeNames();
             }
         };
     }

@@ -138,7 +138,7 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.Single(viewModel.Nodes);
-        Assert.Equal(nodeType, viewModel.Nodes[0].Name);
+        Assert.Equal(nodeType, viewModel.Nodes[0].NodeType);
     }
 
     [Fact]
@@ -152,7 +152,7 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.NotNull(viewModel.SelectedNode);
-        Assert.Equal("Pass Filter", viewModel.SelectedNode.Name);
+        Assert.Equal("Pass Filter", viewModel.SelectedNode.NodeType);
     }
 
     [Fact]
@@ -287,6 +287,8 @@ public class MainWindowViewModelTests
     {
         // Arrange
         var viewModel = new MainWindowViewModel();
+        viewModel.GraphName = "Test Graph";
+        viewModel.GraphVersion = "1.0";
         viewModel.AddNodeAt("Number Producer", new Point(10, 20));
         viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
         var source = viewModel.Nodes[0].Outputs[0];
@@ -303,6 +305,8 @@ public class MainWindowViewModelTests
         Assert.Empty(viewModel.Nodes);
         Assert.Empty(viewModel.Connections);
         Assert.Null(viewModel.SelectedNode);
+        Assert.Equal(string.Empty, viewModel.GraphName);
+        Assert.Equal(string.Empty, viewModel.GraphVersion);
     }
 
     [Fact]
@@ -331,6 +335,7 @@ public class MainWindowViewModelTests
         // Assert
         Assert.NotNull(json);
         Assert.Contains("nodes", json);
+        Assert.Contains("layout", json);
         Assert.Contains("connections", json);
     }
 
@@ -346,6 +351,8 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.Contains("Number Producer", json);
+        // Layout is stored separately from node content
+        Assert.Contains("layout", json);
         Assert.Contains("100", json);
         Assert.Contains("200", json);
     }
@@ -365,9 +372,11 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.Equal(2, viewModel2.Nodes.Count);
-        Assert.Equal("Number Producer", viewModel2.Nodes[0].Name);
+        Assert.Equal("Number Producer", viewModel2.Nodes[0].NodeType);
+        Assert.Equal("Number Producer 1", viewModel2.Nodes[0].Name);
         Assert.Equal(new Point(100, 200), viewModel2.Nodes[0].Location);
-        Assert.Equal("Number Reporter", viewModel2.Nodes[1].Name);
+        Assert.Equal("Number Reporter", viewModel2.Nodes[1].NodeType);
+        Assert.Equal("Number Reporter 1", viewModel2.Nodes[1].Name);
         Assert.Equal(new Point(300, 400), viewModel2.Nodes[1].Location);
     }
 
@@ -519,7 +528,184 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.Single(viewModel2.Nodes);
-        Assert.Equal(nodeType, viewModel2.Nodes[0].Name);
+        Assert.Equal(nodeType, viewModel2.Nodes[0].NodeType);
+        Assert.Equal($"{nodeType} 1", viewModel2.Nodes[0].Name);
         Assert.Equal(new Point(50, 75), viewModel2.Nodes[0].Location);
+    }
+
+    // ── Unique node names ───────────────────────────────────────────────────
+
+    [Fact]
+    public void AddNodeAt_GeneratesUniqueDefaultName()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        viewModel.AddNodeAt("Number Producer", new Point(10, 10));
+
+        // Assert
+        Assert.Equal("Number Producer 1", viewModel.Nodes[0].Name);
+        Assert.Equal("Number Producer 2", viewModel.Nodes[1].Name);
+    }
+
+    [Fact]
+    public void AddNodeAt_SkipsExistingIndexes()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        viewModel.AddNodeAt("Number Producer", new Point(10, 10));
+
+        // Rename "Number Producer 2" to "Number Producer 1" to create a gap
+        viewModel.Nodes[0].Name = "Number Producer 99";
+
+        // Act — adding another should skip 99 and use 1
+        viewModel.AddNodeAt("Number Producer", new Point(20, 20));
+
+        // Assert
+        Assert.Equal("Number Producer 1", viewModel.Nodes[2].Name);
+    }
+
+    [Fact]
+    public void ValidateAllNodeNames_FlagsDuplicates()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        viewModel.AddNodeAt("Number Producer", new Point(10, 10));
+
+        // Act — set both nodes to the same name
+        viewModel.Nodes[1].Name = "Number Producer 1";
+
+        // Assert — both should have name errors
+        Assert.True(viewModel.Nodes[0].HasNameError);
+        Assert.True(viewModel.Nodes[1].HasNameError);
+    }
+
+    [Fact]
+    public void ValidateAllNodeNames_ClearsErrorOnUniqueName()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        viewModel.AddNodeAt("Number Producer", new Point(10, 10));
+
+        // Force a duplicate
+        viewModel.Nodes[1].Name = "Number Producer 1";
+        Assert.True(viewModel.Nodes[0].HasNameError);
+
+        // Act — fix the duplicate
+        viewModel.Nodes[1].Name = "Number Producer 2";
+
+        // Assert
+        Assert.False(viewModel.Nodes[0].HasNameError);
+        Assert.False(viewModel.Nodes[1].HasNameError);
+    }
+
+    // ── Graph name and version ──────────────────────────────────────────────
+
+    [Fact]
+    public void GraphNameAndVersion_DefaultsToEmpty()
+    {
+        var viewModel = new MainWindowViewModel();
+        Assert.Equal(string.Empty, viewModel.GraphName);
+        Assert.Equal(string.Empty, viewModel.GraphVersion);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_PreservesGraphNameAndVersion()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.GraphName = "My System";
+        viewModel.GraphVersion = "2.1.0";
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        Assert.Equal("My System", viewModel2.GraphName);
+        Assert.Equal("2.1.0", viewModel2.GraphVersion);
+    }
+
+    [Fact]
+    public void SerializeGraph_EmptyNameAndVersion_OmitsFromJson()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act
+        var json = viewModel.SerializeGraph();
+
+        // Assert — empty name/version should not appear in JSON
+        Assert.DoesNotContain("\"name\"", json);
+        Assert.DoesNotContain("\"version\"", json);
+    }
+
+    // ── Layout separation ───────────────────────────────────────────────────
+
+    [Fact]
+    public void SerializeGraph_StoresLayoutSeparately()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(150, 250));
+        var nodeName = viewModel.Nodes[0].Name;
+
+        // Act
+        var json = viewModel.SerializeGraph();
+
+        // Assert — layout section contains the node's position keyed by name
+        Assert.Contains("\"layout\"", json);
+        Assert.Contains(nodeName, json);
+    }
+
+    // ── Name-based connections ──────────────────────────────────────────────
+
+    [Fact]
+    public void SerializeGraph_ConnectionsUseNameBasedFormat()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+
+        // Act
+        var json = viewModel.SerializeGraph();
+
+        // Assert — connections use "from" and "to" with "NodeName.ConnectorName" format
+        Assert.Contains("\"from\"", json);
+        Assert.Contains("\"to\"", json);
+        Assert.Contains("Number Producer 1.Output", json);
+        Assert.Contains("Number Reporter 1.Input", json);
+    }
+
+    [Fact]
+    public void DeserializeGraph_RestoresNameBasedConnections()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        Assert.Single(viewModel2.Connections);
+        Assert.True(viewModel2.Nodes[0].Outputs[0].IsConnected);
+        Assert.True(viewModel2.Nodes[1].Inputs[0].IsConnected);
     }
 }

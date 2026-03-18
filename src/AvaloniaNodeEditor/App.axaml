@@ -33,5 +33,9 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://NodifyM.Avalonia/Styles/ControlStyles.axaml" />
+        <!-- Red border on TextBox when node name is a duplicate -->
+        <Style Selector="TextBox.nameError">
+            <Setter Property="BorderBrush" Value="Red"/>
+        </Style>
     </Application.Styles>
 </Application>

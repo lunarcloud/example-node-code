@@ -6,6 +6,9 @@ namespace AvaloniaNodeEditor.Models;
 /// <summary>A node that receives and displays an incoming float value.</summary>
 public partial class NumberReporterNode : NodeViewModel
 {
+    /// <inheritdoc />
+    public override string NodeType => "Number Reporter";
+
     /// <summary>The float value received by this node.</summary>
     [ObservableProperty]
     private double _value;

@@ -9,6 +9,7 @@ public class NumberProducerNodeTests
     {
         var node = new NumberProducerNode();
         Assert.Equal("Number Producer", node.Name);
+        Assert.Equal("Number Producer", node.NodeType);
     }
 
     [Fact]
