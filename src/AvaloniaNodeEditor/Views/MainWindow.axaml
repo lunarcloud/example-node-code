@@ -61,18 +61,21 @@
                         <StackPanel Orientation="Horizontal" Spacing="2">
                             <Button Classes="ribbon-button"
                                     Command="{Binding NewGraphCommand}"
-                                    ToolTip.Tip="New graph (Ctrl+N)">
-                                New
+                                    ToolTip.Tip="New graph (Ctrl+N)"
+                                    AutomationProperties.Name="New graph">
+                                <TextBlock Text="🗋" Classes="ribbon-icon"/>
                             </Button>
                             <Button Classes="ribbon-button"
                                     Click="OnSaveClick"
-                                    ToolTip.Tip="Save graph (Ctrl+S)">
-                                Save
+                                    ToolTip.Tip="Save graph (Ctrl+S)"
+                                    AutomationProperties.Name="Save graph">
+                                <TextBlock Text="🖴" Classes="ribbon-icon"/>
                             </Button>
                             <Button Classes="ribbon-button"
                                     Click="OnLoadClick"
-                                    ToolTip.Tip="Open graph (Ctrl+O)">
-                                Open
+                                    ToolTip.Tip="Open graph (Ctrl+O)"
+                                    AutomationProperties.Name="Open graph">
+                                <TextBlock Text="🗁" Classes="ribbon-icon"/>
                             </Button>
                         </StackPanel>
                     </DockPanel>
@@ -87,18 +90,21 @@
                         <StackPanel Orientation="Horizontal" Spacing="2">
                             <Button Classes="ribbon-button"
                                     Command="{Binding CopyNodeCommand}"
-                                    ToolTip.Tip="Copy selected node (Ctrl+C)">
-                                Copy
+                                    ToolTip.Tip="Copy selected node (Ctrl+C)"
+                                    AutomationProperties.Name="Copy node">
+                                <TextBlock Text="🗐" Classes="ribbon-icon"/>
                             </Button>
                             <Button Classes="ribbon-button"
                                     Command="{Binding PasteNodeCommand}"
-                                    ToolTip.Tip="Paste copied node (Ctrl+V)">
-                                Paste
+                                    ToolTip.Tip="Paste copied node (Ctrl+V)"
+                                    AutomationProperties.Name="Paste node">
+                                <TextBlock Text="📋" Classes="ribbon-icon"/>
                             </Button>
                             <Button Classes="ribbon-button"
                                     Command="{Binding DeleteNodeCommand}"
-                                    ToolTip.Tip="Delete selected node (Del)">
-                                Delete
+                                    ToolTip.Tip="Delete selected node (Del)"
+                                    AutomationProperties.Name="Delete node">
+                                <TextBlock Text="🗑" Classes="ribbon-icon"/>
                             </Button>
                         </StackPanel>
                     </DockPanel>
@@ -112,8 +118,9 @@
                                    Classes="ribbon-group-label"/>
                         <DropDownButton Classes="ribbon-button"
                                         x:CompileBindings="False"
-                                        ToolTip.Tip="Add a new node to the canvas">
-                            Add Node
+                                        ToolTip.Tip="Add a new node to the canvas"
+                                        AutomationProperties.Name="Add node">
+                            <TextBlock Text="✚" Classes="ribbon-icon"/>
                             <DropDownButton.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedLeft">
                                     <MenuItem Header="Number Producer"
@@ -146,12 +153,14 @@
                         <StackPanel Orientation="Horizontal" Spacing="2">
                             <ToggleButton Classes="ribbon-button"
                                           IsChecked="{Binding IsPropertiesPanelVisible}"
-                                          ToolTip.Tip="Show or hide the node properties panel">
-                                Properties
+                                          ToolTip.Tip="Show or hide the node properties panel"
+                                          AutomationProperties.Name="Toggle properties panel">
+                                <TextBlock Text="🗒" Classes="ribbon-icon"/>
                             </ToggleButton>
                             <Button Classes="ribbon-button"
-                                    ToolTip.Tip="View and edit the graph name and version">
-                                Graph Info
+                                    ToolTip.Tip="View and edit the graph name and version"
+                                    AutomationProperties.Name="Graph properties">
+                                <TextBlock Text="🛈" Classes="ribbon-icon"/>
                                 <Button.Flyout>
                                     <Flyout Placement="Bottom">
                                         <StackPanel Spacing="6" Width="200" Margin="8">
@@ -176,8 +185,9 @@
                                    Classes="ribbon-group-label"/>
                         <Button Classes="ribbon-button"
                                 Click="OnAboutClick"
-                                ToolTip.Tip="About Avalonia Node Editor">
-                            About
+                                ToolTip.Tip="About Avalonia Node Editor"
+                                AutomationProperties.Name="About">
+                            <TextBlock Text="❓" Classes="ribbon-icon"/>
                         </Button>
                     </DockPanel>
                 </Border>
