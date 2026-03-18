@@ -18,6 +18,18 @@ Enforce quality standards for Avalonia Node Editor reference implementation.
 
 ## Avalonia Node Editor-Specific
 
+### Node Library
+
+See [`.github/nodify-library.md`][nodify-ref] for the NodifyM.Avalonia integration reference.
+When reviewing XAML or ViewModel changes touching the node editor, verify:
+
+- `Node.Location` and `Node.IsSelected` bindings use `Mode=TwoWay`
+- `Connector.Anchor` binding uses `Mode=TwoWay`
+- `NodifyEditor` is wrapped in `<Border ClipToBounds="True">`
+- Only `ConnectionCompletedCommand` on the editor is bound (not also `PendingConnection` commands)
+
+### Test Naming
+
 - **Test Naming**: `TemplateTool_MethodUnderTest_Scenario` (for requirements traceability)
 - **Test Linkage**: All requirements MUST link to tests (prefer `TemplateTool_*` self-validation)
 - **XML Docs**: On ALL members (public/internal/private) with spaces after `///`
@@ -31,3 +43,5 @@ dotnet run --project src/DemaConsulting.TemplateDotNetTool --configuration Relea
 dotnet format --verify-no-changes
 dotnet reqstream --requirements requirements.yaml --tests "test-results/**/*.trx" --enforce
 ```
+
+[nodify-ref]: ../nodify-library.md

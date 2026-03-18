@@ -1,13 +1,13 @@
 # Agent Quick Reference
 
 Project-specific guidance for agents working on Avalonia Node Editor - a cross-platform
-desktop application using Avalonia UI and NodeEditorAvalonia.
+desktop application using Avalonia UI and NodifyM.Avalonia.
 
 ## Tech Stack
 
 - C# 12, .NET 10.0, dotnet CLI, NuGet
-- Avalonia UI 11.3.11 (cross-platform desktop framework)
-- NodeEditorAvalonia 11.3.11 (node editor control)
+- Avalonia UI 11.3.12 (cross-platform desktop framework)
+- NodifyM.Avalonia 1.1.9 (node graph editor control — see [`.github/nodify-library.md`][nodify-ref])
 - CommunityToolkit.Mvvm 8.4.0 (MVVM helpers)
 
 ## Key Files
@@ -16,6 +16,7 @@ desktop application using Avalonia UI and NodeEditorAvalonia.
 - **`.editorconfig`** - Code style (file-scoped namespaces, 4-space indent, UTF-8+BOM, LF endings)
 - **`.cspell.json`, `.markdownlint.json`, `.yamllint.yaml`** - Linting configs
 - **`AvaloniaNodeEditor.slnx`** - XML-based solution file
+- **[`.github/nodify-library.md`][nodify-ref]** - NodifyM.Avalonia library reference (controls, bindings, commands, pitfalls)
 
 ## Architecture
 
@@ -92,3 +93,5 @@ lint.bat      # Windows
 # Pack as NuGet tool
 dotnet pack --configuration Release
 ```
+
+[nodify-ref]: .github/nodify-library.md

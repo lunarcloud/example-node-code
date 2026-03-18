@@ -16,11 +16,18 @@ Invoke the documentation-writer agent for:
 - Ensuring requirements are properly linked to tests
 - Markdown, spell checking, and YAML linting issues
 - Documentation structure and organization improvements
+- Updates to [`.github/nodify-library.md`][nodify-ref] when NodifyM.Avalonia usage patterns change
 
 For requirements quality: After this agent updates requirements, invoke the software-quality-enforcer
 agent to ensure requirements have proper test coverage and quality.
 
 ## Avalonia Node Editor-Specific Rules
+
+### Node Library
+
+See [`.github/nodify-library.md`][nodify-ref] for the NodifyM.Avalonia integration reference:
+controls, required bindings (including TwoWay pitfalls), commands, drag-and-drop API, and
+known pitfalls.
 
 ### Markdown
 
@@ -45,3 +52,5 @@ agent to ensure requirements have proper test coverage and quality.
 
 - Change code to match docs
 - Add docs for non-existent features
+
+[nodify-ref]: ../nodify-library.md

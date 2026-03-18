@@ -9,6 +9,11 @@ Maintain Avalonia Node Editor infrastructure, dependencies, releases, and requir
 
 ## Avalonia Node Editor-Specific
 
+### Node Library
+
+See [`.github/nodify-library.md`][nodify-ref] for the NodifyM.Avalonia integration reference
+(controls, commands, binding requirements, drag-and-drop API, known pitfalls).
+
 ### Build
 
 - Targets: .NET 8.0, 9.0, 10.0
@@ -48,3 +53,5 @@ dotnet pack --no-build --configuration Release
 - Merge without CI passing
 - Ignore failing tests/builds
 - Disable quality checks
+
+[nodify-ref]: ../nodify-library.md
