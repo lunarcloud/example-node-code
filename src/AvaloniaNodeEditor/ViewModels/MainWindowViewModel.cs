@@ -97,26 +97,25 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        // Ensure the connection goes from an output to an input.
-        // If the user dragged from an input to an output, swap them.
+        // Determine whether each endpoint is an input or output in a single pass.
         bool sourceIsOutput = IsOutputConnector(source);
+        bool sourceIsInput = !sourceIsOutput && IsInputConnector(source);
         bool targetIsInput = IsInputConnector(target);
+        bool targetIsOutput = !targetIsInput && IsOutputConnector(target);
 
-        if (!sourceIsOutput || !targetIsInput)
+        if (sourceIsOutput && targetIsInput)
         {
-            bool sourceIsInput = IsInputConnector(source);
-            bool targetIsOutput = IsOutputConnector(target);
-
-            if (sourceIsInput && targetIsOutput)
-            {
-                // Swap direction so the connection is output → input
-                (source, target) = (target, source);
-            }
-            else
-            {
-                // Both are outputs, both are inputs, or not found on any node
-                return;
-            }
+            // Normal direction — output → input
+        }
+        else if (sourceIsInput && targetIsOutput)
+        {
+            // User dragged backwards — swap so the connection is output → input
+            (source, target) = (target, source);
+        }
+        else
+        {
+            // Both are outputs, both are inputs, or not found on any node
+            return;
         }
 
         Connections.Add(new ConnectionViewModel(source, target));
