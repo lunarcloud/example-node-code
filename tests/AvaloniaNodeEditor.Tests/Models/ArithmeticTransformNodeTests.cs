@@ -9,6 +9,7 @@ public class ArithmeticTransformNodeTests
     {
         var node = new ArithmeticTransformNode();
         Assert.Equal("Arithmetic Transform", node.Name);
+        Assert.Equal("Arithmetic Transform", node.NodeType);
     }
 
     [Fact]

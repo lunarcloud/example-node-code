@@ -7,6 +7,9 @@ namespace AvaloniaNodeEditor.Models;
 /// <summary>A node that generates a random float value within a configurable range.</summary>
 public partial class RandomNumberGeneratorNode : NodeViewModel
 {
+    /// <inheritdoc />
+    public override string NodeType => "Random Number Generator";
+
     private static readonly Random _random = Random.Shared;
 
     /// <summary>The lower bound of the generated value (inclusive).</summary>

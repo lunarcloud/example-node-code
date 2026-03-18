@@ -9,6 +9,7 @@ public class RandomNumberGeneratorNodeTests
     {
         var node = new RandomNumberGeneratorNode();
         Assert.Equal("Random Number Generator", node.Name);
+        Assert.Equal("Random Number Generator", node.NodeType);
     }
 
     [Fact]

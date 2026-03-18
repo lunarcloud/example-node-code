@@ -6,6 +6,9 @@ namespace AvaloniaNodeEditor.Models;
 /// <summary>A node that applies an arithmetic operation to two input float values and produces a result.</summary>
 public partial class ArithmeticTransformNode : NodeViewModel
 {
+    /// <inheritdoc />
+    public override string NodeType => "Arithmetic Transform";
+
     /// <summary>The first input operand.</summary>
     [ObservableProperty]
     private double _inputA;

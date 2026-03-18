@@ -9,6 +9,7 @@ public class PassFilterNodeTests
     {
         var node = new PassFilterNode();
         Assert.Equal("Pass Filter", node.Name);
+        Assert.Equal("Pass Filter", node.NodeType);
     }
 
     [Fact]
