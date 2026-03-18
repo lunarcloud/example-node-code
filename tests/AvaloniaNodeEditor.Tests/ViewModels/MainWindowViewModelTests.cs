@@ -1,4 +1,5 @@
 using Avalonia;
+using AvaloniaNodeEditor.Models;
 using AvaloniaNodeEditor.ViewModels;
 
 namespace AvaloniaNodeEditor.Tests.ViewModels;
@@ -277,5 +278,248 @@ public class MainWindowViewModelTests
         Assert.Empty(viewModel.Connections);
         Assert.False(source.IsConnected);
         Assert.False(target.IsConnected);
+    }
+
+    // ── NewGraph ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void NewGraph_ClearsNodesConnectionsAndSelection()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+        Assert.Equal(2, viewModel.Nodes.Count);
+        Assert.Single(viewModel.Connections);
+        Assert.NotNull(viewModel.SelectedNode);
+
+        // Act
+        viewModel.NewGraphCommand.Execute(null);
+
+        // Assert
+        Assert.Empty(viewModel.Nodes);
+        Assert.Empty(viewModel.Connections);
+        Assert.Null(viewModel.SelectedNode);
+    }
+
+    [Fact]
+    public void NewGraph_OnEmptyGraph_DoesNotThrow()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act & Assert – should not throw
+        viewModel.NewGraphCommand.Execute(null);
+        Assert.Empty(viewModel.Nodes);
+        Assert.Empty(viewModel.Connections);
+    }
+
+    // ── Serialize / Deserialize ─────────────────────────────────────────────
+
+    [Fact]
+    public void SerializeGraph_EmptyGraph_ReturnsValidJson()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act
+        var json = viewModel.SerializeGraph();
+
+        // Assert
+        Assert.NotNull(json);
+        Assert.Contains("nodes", json);
+        Assert.Contains("connections", json);
+    }
+
+    [Fact]
+    public void SerializeGraph_WithNodes_IncludesNodeData()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(100, 200));
+
+        // Act
+        var json = viewModel.SerializeGraph();
+
+        // Assert
+        Assert.Contains("Number Producer", json);
+        Assert.Contains("100", json);
+        Assert.Contains("200", json);
+    }
+
+    [Fact]
+    public void DeserializeGraph_RestoresNodes()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(100, 200));
+        viewModel.AddNodeAt("Number Reporter", new Point(300, 400));
+        var json = viewModel.SerializeGraph();
+
+        // Act – deserialize into a fresh view model
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        Assert.Equal(2, viewModel2.Nodes.Count);
+        Assert.Equal("Number Producer", viewModel2.Nodes[0].Name);
+        Assert.Equal(new Point(100, 200), viewModel2.Nodes[0].Location);
+        Assert.Equal("Number Reporter", viewModel2.Nodes[1].Name);
+        Assert.Equal(new Point(300, 400), viewModel2.Nodes[1].Location);
+    }
+
+    [Fact]
+    public void DeserializeGraph_RestoresConnections()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        Assert.Single(viewModel2.Connections);
+        Assert.True(viewModel2.Nodes[0].Outputs[0].IsConnected);
+        Assert.True(viewModel2.Nodes[1].Inputs[0].IsConnected);
+    }
+
+    [Fact]
+    public void DeserializeGraph_ClearsExistingState()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        Assert.Equal(2, viewModel.Nodes.Count);
+
+        // Deserialize an empty graph
+        var emptyJson = new MainWindowViewModel().SerializeGraph();
+
+        // Act
+        viewModel.DeserializeGraph(emptyJson);
+
+        // Assert
+        Assert.Empty(viewModel.Nodes);
+        Assert.Empty(viewModel.Connections);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_NumberProducerNode_PreservesValue()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        ((NumberProducerNode)viewModel.Nodes[0]).Value = 42.5;
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        var restored = Assert.IsType<NumberProducerNode>(viewModel2.Nodes[0]);
+        Assert.Equal(42.5, restored.Value);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_ArithmeticTransformNode_PreservesProperties()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Arithmetic Transform", new Point(0, 0));
+        var node = (ArithmeticTransformNode)viewModel.Nodes[0];
+        node.InputA = 10;
+        node.InputB = 5;
+        node.Operation = ArithmeticOperation.Multiply;
+        node.Compute();
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        var restored = Assert.IsType<ArithmeticTransformNode>(viewModel2.Nodes[0]);
+        Assert.Equal(10, restored.InputA);
+        Assert.Equal(5, restored.InputB);
+        Assert.Equal(ArithmeticOperation.Multiply, restored.Operation);
+        Assert.Equal(50, restored.Result);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_RandomNumberGeneratorNode_PreservesProperties()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Random Number Generator", new Point(0, 0));
+        var node = (RandomNumberGeneratorNode)viewModel.Nodes[0];
+        node.MinValue = 5;
+        node.MaxValue = 10;
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        var restored = Assert.IsType<RandomNumberGeneratorNode>(viewModel2.Nodes[0]);
+        Assert.Equal(5, restored.MinValue);
+        Assert.Equal(10, restored.MaxValue);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_PassFilterNode_PreservesProperties()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Pass Filter", new Point(0, 0));
+        var node = (PassFilterNode)viewModel.Nodes[0];
+        node.FilterType = FilterType.MidPass;
+        node.Threshold = 1.5;
+        node.UpperThreshold = 8.5;
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        var restored = Assert.IsType<PassFilterNode>(viewModel2.Nodes[0]);
+        Assert.Equal(FilterType.MidPass, restored.FilterType);
+        Assert.Equal(1.5, restored.Threshold);
+        Assert.Equal(8.5, restored.UpperThreshold);
+    }
+
+    [Theory]
+    [InlineData("Number Producer")]
+    [InlineData("Number Reporter")]
+    [InlineData("Arithmetic Transform")]
+    [InlineData("Random Number Generator")]
+    [InlineData("Pass Filter")]
+    public void SerializeDeserialize_AllNodeTypes_RoundTrip(string nodeType)
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt(nodeType, new Point(50, 75));
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        Assert.Single(viewModel2.Nodes);
+        Assert.Equal(nodeType, viewModel2.Nodes[0].Name);
+        Assert.Equal(new Point(50, 75), viewModel2.Nodes[0].Location);
     }
 }

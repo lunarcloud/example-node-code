@@ -93,7 +93,6 @@ jobs:
           --property:Version=${{ inputs.version }}
 
       - name: Test
-        if: false  # No tests yet - add when test project is created
         run: >
           dotnet test
           --no-build
@@ -121,11 +120,12 @@ jobs:
           --property:PackageVersion=${{ inputs.version }}
 
       - name: Upload Test Results
-        if: false  # No tests yet - add when test project is created
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: test-results-${{ matrix.os }}
           path: test-results/*.trx
+          retention-days: 5
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
@@ -133,6 +133,7 @@ jobs:
           name: artifacts-${{ matrix.os }}
           path: |
             src/AvaloniaNodeEditor/bin/Release/net10.0/
+          retention-days: 5
 
   codeql:
     name: CodeQL Analysis
@@ -180,13 +181,14 @@ jobs:
         with:
           category: "/language:csharp"
           output: sarif-results
-          upload: false
 
       - name: Upload CodeQL SARIF
         uses: actions/upload-artifact@v7
+        continue-on-error: true
         with:
           name: codeql-sarif
           path: sarif-results/csharp.sarif
+          retention-days: 5
 
   integration-test:
     name: Integration Test ${{ matrix.os }} .NET ${{ matrix.dotnet-version }}
