@@ -97,7 +97,8 @@
                                  ItemsSource="{Binding Nodes}"
                                  Connections="{Binding Connections}"
                                  ConnectionCompletedCommand="{Binding ConnectionCompletedCommand}"
-                                 RemoveConnectionCommand="{Binding RemoveConnectionCommand}">
+                                 RemoveConnectionCommand="{Binding RemoveConnectionCommand}"
+                                 DisconnectConnectorCommand="{Binding DisconnectConnectorCommand}">
 
                 <!-- Template for each node on the canvas -->
                 <nodify:NodifyEditor.ItemTemplate>

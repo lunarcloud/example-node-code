@@ -81,7 +81,9 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     /// <summary>Called by the editor when the user finishes dragging a connection to a target connector.
-    /// <para>The editor passes a <c>(source, target)</c> tuple as the argument.</para></summary>
+    /// <para>The editor passes a <c>(source, target)</c> tuple as the argument.
+    /// Only output-to-input connections are allowed. If the user drags from an input to an
+    /// output the endpoints are automatically swapped.</para></summary>
     [RelayCommand]
     private void ConnectionCompleted(object? args)
     {
@@ -90,12 +92,36 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        if (source != target)
+        if (source == target)
         {
-            Connections.Add(new ConnectionViewModel(source, target));
-            source.IsConnected = true;
-            target.IsConnected = true;
+            return;
         }
+
+        // Ensure the connection goes from an output to an input.
+        // If the user dragged from an input to an output, swap them.
+        bool sourceIsOutput = IsOutputConnector(source);
+        bool targetIsInput = IsInputConnector(target);
+
+        if (!sourceIsOutput || !targetIsInput)
+        {
+            bool sourceIsInput = IsInputConnector(source);
+            bool targetIsOutput = IsOutputConnector(target);
+
+            if (sourceIsInput && targetIsOutput)
+            {
+                // Swap direction so the connection is output → input
+                (source, target) = (target, source);
+            }
+            else
+            {
+                // Both are outputs, both are inputs, or not found on any node
+                return;
+            }
+        }
+
+        Connections.Add(new ConnectionViewModel(source, target));
+        source.IsConnected = true;
+        target.IsConnected = true;
     }
 
     /// <summary>Removes a connection from the graph.</summary>
@@ -112,6 +138,24 @@ public partial class MainWindowViewModel : ViewModelBase
         // Re-evaluate IsConnected for both endpoints
         UpdateIsConnected(conn.Source);
         UpdateIsConnected(conn.Target);
+    }
+
+    /// <summary>Removes all connections attached to a given connector.</summary>
+    [RelayCommand]
+    private void DisconnectConnector(object? connector)
+    {
+        if (connector is not ConnectorViewModel conn)
+        {
+            return;
+        }
+
+        var toRemove = Connections.Where(c => c.Source == conn || c.Target == conn).ToList();
+        foreach (var connection in toRemove)
+        {
+            Connections.Remove(connection);
+            UpdateIsConnected(connection.Source);
+            UpdateIsConnected(connection.Target);
+        }
     }
 
     /// <summary>Clears all nodes and connections from the graph.</summary>
@@ -442,5 +486,13 @@ public partial class MainWindowViewModel : ViewModelBase
         connector.IsConnected = Connections.Any(
             c => c.Source == connector || c.Target == connector);
     }
+
+    /// <summary>Returns true when <paramref name="connector"/> belongs to any node's <see cref="NodeViewModel.Outputs"/> collection.</summary>
+    internal bool IsOutputConnector(ConnectorViewModel connector) =>
+        Nodes.Any(n => n.Outputs.Contains(connector));
+
+    /// <summary>Returns true when <paramref name="connector"/> belongs to any node's <see cref="NodeViewModel.Inputs"/> collection.</summary>
+    internal bool IsInputConnector(ConnectorViewModel connector) =>
+        Nodes.Any(n => n.Inputs.Contains(connector));
 }
 
