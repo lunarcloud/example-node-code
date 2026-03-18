@@ -206,8 +206,10 @@ public class MainWindowViewModelTests
     {
         // Arrange — NodifyEditor fires ConnectionCompletedCommand with (source, target) tuple
         var viewModel = new MainWindowViewModel();
-        var source = new ConnectorViewModel { Name = "out" };
-        var target = new ConnectorViewModel { Name = "in" };
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
 
         // Act
         viewModel.ConnectionCompletedCommand.Execute((source, target));
@@ -223,8 +225,10 @@ public class MainWindowViewModelTests
     {
         // Arrange
         var viewModel = new MainWindowViewModel();
-        var source = new ConnectorViewModel { Name = "out" };
-        var target = new ConnectorViewModel { Name = "in" };
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
 
         // Act
         viewModel.ConnectionCompletedCommand.Execute((source, target));
@@ -239,7 +243,8 @@ public class MainWindowViewModelTests
     {
         // Arrange — self-loops should be rejected
         var viewModel = new MainWindowViewModel();
-        var connector = new ConnectorViewModel { Name = "out" };
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        var connector = viewModel.Nodes[0].Outputs[0];
 
         // Act
         viewModel.ConnectionCompletedCommand.Execute((connector, connector));
@@ -266,8 +271,10 @@ public class MainWindowViewModelTests
     {
         // Arrange
         var viewModel = new MainWindowViewModel();
-        var source = new ConnectorViewModel { Name = "out" };
-        var target = new ConnectorViewModel { Name = "in" };
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
         viewModel.ConnectionCompletedCommand.Execute((source, target));
         Assert.Single(viewModel.Connections);
 
@@ -278,6 +285,137 @@ public class MainWindowViewModelTests
         Assert.Empty(viewModel.Connections);
         Assert.False(source.IsConnected);
         Assert.False(target.IsConnected);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_InputToOutput_SwapsAndCreatesConnection()
+    {
+        // Arrange — user drags from an input to an output; endpoints should be swapped
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var output = viewModel.Nodes[0].Outputs[0];
+        var input = viewModel.Nodes[1].Inputs[0];
+
+        // Act — pass input as source, output as target (backwards)
+        viewModel.ConnectionCompletedCommand.Execute((input, output));
+
+        // Assert — connection is created with output as Source, input as Target
+        Assert.Single(viewModel.Connections);
+        Assert.Same(output, viewModel.Connections[0].Source);
+        Assert.Same(input, viewModel.Connections[0].Target);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_OutputToOutput_DoesNotCreateConnection()
+    {
+        // Arrange — connecting two outputs should be rejected
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Random Number Generator", new Point(100, 200));
+        var output1 = viewModel.Nodes[0].Outputs[0];
+        var output2 = viewModel.Nodes[1].Outputs[0];
+
+        // Act
+        viewModel.ConnectionCompletedCommand.Execute((output1, output2));
+
+        // Assert
+        Assert.Empty(viewModel.Connections);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_InputToInput_DoesNotCreateConnection()
+    {
+        // Arrange — connecting two inputs should be rejected
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Reporter", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var input1 = viewModel.Nodes[0].Inputs[0];
+        var input2 = viewModel.Nodes[1].Inputs[0];
+
+        // Act
+        viewModel.ConnectionCompletedCommand.Execute((input1, input2));
+
+        // Assert
+        Assert.Empty(viewModel.Connections);
+    }
+
+    [Fact]
+    public void DisconnectConnector_RemovesAllConnectionsOnConnector()
+    {
+        // Arrange — one output connected to two inputs
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        viewModel.AddNodeAt("Arithmetic Transform", new Point(200, 200));
+        var output = viewModel.Nodes[0].Outputs[0];
+        var input1 = viewModel.Nodes[1].Inputs[0];
+        var input2 = viewModel.Nodes[2].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((output, input1));
+        viewModel.ConnectionCompletedCommand.Execute((output, input2));
+        Assert.Equal(2, viewModel.Connections.Count);
+
+        // Act — disconnect the output connector
+        viewModel.DisconnectConnectorCommand.Execute(output);
+
+        // Assert — all connections removed and IsConnected cleared
+        Assert.Empty(viewModel.Connections);
+        Assert.False(output.IsConnected);
+        Assert.False(input1.IsConnected);
+        Assert.False(input2.IsConnected);
+    }
+
+    [Fact]
+    public void DisconnectConnector_NullArg_DoesNotThrow()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act & Assert — should not throw
+        viewModel.DisconnectConnectorCommand.Execute(null);
+        Assert.Empty(viewModel.Connections);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_InputAlreadyConnected_RejectsSecondConnection()
+    {
+        // Arrange — one input can only accept a single connection
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Producer", new Point(100, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(200, 200));
+        var output1 = viewModel.Nodes[0].Outputs[0];
+        var output2 = viewModel.Nodes[1].Outputs[0];
+        var input = viewModel.Nodes[2].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((output1, input));
+        Assert.Single(viewModel.Connections);
+
+        // Act — try to connect a second output to the same input
+        viewModel.ConnectionCompletedCommand.Execute((output2, input));
+
+        // Assert — second connection is rejected; only the first remains
+        Assert.Single(viewModel.Connections);
+        Assert.Same(output1, viewModel.Connections[0].Source);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_OutputToMultipleInputs_AllowsMultipleConnections()
+    {
+        // Arrange — one output can feed many inputs
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        viewModel.AddNodeAt("Arithmetic Transform", new Point(200, 200));
+        var output = viewModel.Nodes[0].Outputs[0];
+        var input1 = viewModel.Nodes[1].Inputs[0];
+        var input2 = viewModel.Nodes[2].Inputs[0];
+
+        // Act
+        viewModel.ConnectionCompletedCommand.Execute((output, input1));
+        viewModel.ConnectionCompletedCommand.Execute((output, input2));
+
+        // Assert — both connections succeed
+        Assert.Equal(2, viewModel.Connections.Count);
     }
 
     // ── NewGraph ────────────────────────────────────────────────────────────
