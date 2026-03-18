@@ -118,6 +118,12 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        // Each input connector accepts at most one connection.
+        if (Connections.Any(c => c.Target == target))
+        {
+            return;
+        }
+
         Connections.Add(new ConnectionViewModel(source, target));
         source.IsConnected = true;
         target.IsConnected = true;

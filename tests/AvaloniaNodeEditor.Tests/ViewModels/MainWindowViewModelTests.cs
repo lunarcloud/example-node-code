@@ -376,6 +376,48 @@ public class MainWindowViewModelTests
         Assert.Empty(viewModel.Connections);
     }
 
+    [Fact]
+    public void ConnectionCompleted_InputAlreadyConnected_RejectsSecondConnection()
+    {
+        // Arrange — one input can only accept a single connection
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Producer", new Point(100, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(200, 200));
+        var output1 = viewModel.Nodes[0].Outputs[0];
+        var output2 = viewModel.Nodes[1].Outputs[0];
+        var input = viewModel.Nodes[2].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((output1, input));
+        Assert.Single(viewModel.Connections);
+
+        // Act — try to connect a second output to the same input
+        viewModel.ConnectionCompletedCommand.Execute((output2, input));
+
+        // Assert — second connection is rejected; only the first remains
+        Assert.Single(viewModel.Connections);
+        Assert.Same(output1, viewModel.Connections[0].Source);
+    }
+
+    [Fact]
+    public void ConnectionCompleted_OutputToMultipleInputs_AllowsMultipleConnections()
+    {
+        // Arrange — one output can feed many inputs
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        viewModel.AddNodeAt("Arithmetic Transform", new Point(200, 200));
+        var output = viewModel.Nodes[0].Outputs[0];
+        var input1 = viewModel.Nodes[1].Inputs[0];
+        var input2 = viewModel.Nodes[2].Inputs[0];
+
+        // Act
+        viewModel.ConnectionCompletedCommand.Execute((output, input1));
+        viewModel.ConnectionCompletedCommand.Execute((output, input2));
+
+        // Assert — both connections succeed
+        Assert.Equal(2, viewModel.Connections.Count);
+    }
+
     // ── NewGraph ────────────────────────────────────────────────────────────
 
     [Fact]
