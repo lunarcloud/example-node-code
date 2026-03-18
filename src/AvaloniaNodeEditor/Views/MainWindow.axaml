@@ -133,7 +133,8 @@
                 <nodify:NodifyEditor.ConnectionTemplate>
                     <DataTemplate>
                         <nodify:Connection Source="{Binding Source.Anchor}"
-                                           Target="{Binding Target.Anchor}" />
+                                           Target="{Binding Target.Anchor}"
+                                           DisconnectCommand="{Binding $parent[nodify:NodifyEditor].RemoveConnectionCommand}" />
                     </DataTemplate>
                 </nodify:NodifyEditor.ConnectionTemplate>
 
