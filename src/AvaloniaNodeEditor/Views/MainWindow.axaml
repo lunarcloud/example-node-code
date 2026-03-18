@@ -35,22 +35,155 @@
         </DataTemplate>
     </Window.Resources>
 
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding NewGraphCommand}"/>
+        <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyNodeCommand}"/>
+        <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteNodeCommand}"/>
+        <KeyBinding Gesture="Delete" Command="{Binding DeleteNodeCommand}"/>
+    </Window.KeyBindings>
+
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
     <DockPanel>
-        <!-- Menu bar -->
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="_File">
-                <MenuItem Header="_New" Command="{Binding NewGraphCommand}" HotKey="Ctrl+N"/>
-                <Separator/>
-                <MenuItem Header="_Save" Click="OnSaveClick" HotKey="Ctrl+S"/>
-                <MenuItem Header="_Load" Click="OnLoadClick" HotKey="Ctrl+O"/>
-                <Separator/>
-                <MenuItem Header="_Quit" Command="{Binding QuitCommand}"/>
-            </MenuItem>
-        </Menu>
+        <!-- Ribbon Toolbar -->
+        <Border DockPanel.Dock="Top"
+                Classes="ribbon-container">
+            <StackPanel Orientation="Horizontal" Spacing="0">
+
+                <!-- File Group -->
+                <Border Classes="ribbon-group">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Bottom"
+                                   Text="File"
+                                   Classes="ribbon-group-label"/>
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <Button Classes="ribbon-button"
+                                    Command="{Binding NewGraphCommand}"
+                                    ToolTip.Tip="New graph (Ctrl+N)">
+                                New
+                            </Button>
+                            <Button Classes="ribbon-button"
+                                    Click="OnSaveClick"
+                                    ToolTip.Tip="Save graph (Ctrl+S)">
+                                Save
+                            </Button>
+                            <Button Classes="ribbon-button"
+                                    Click="OnLoadClick"
+                                    ToolTip.Tip="Open graph (Ctrl+O)">
+                                Open
+                            </Button>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Edit Group -->
+                <Border Classes="ribbon-group">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Bottom"
+                                   Text="Edit"
+                                   Classes="ribbon-group-label"/>
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <Button Classes="ribbon-button"
+                                    Command="{Binding CopyNodeCommand}"
+                                    ToolTip.Tip="Copy selected node (Ctrl+C)">
+                                Copy
+                            </Button>
+                            <Button Classes="ribbon-button"
+                                    Command="{Binding PasteNodeCommand}"
+                                    ToolTip.Tip="Paste copied node (Ctrl+V)">
+                                Paste
+                            </Button>
+                            <Button Classes="ribbon-button"
+                                    Command="{Binding DeleteNodeCommand}"
+                                    ToolTip.Tip="Delete selected node (Del)">
+                                Delete
+                            </Button>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Nodes Group -->
+                <Border Classes="ribbon-group">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Bottom"
+                                   Text="Nodes"
+                                   Classes="ribbon-group-label"/>
+                        <DropDownButton Classes="ribbon-button"
+                                        x:CompileBindings="False"
+                                        ToolTip.Tip="Add a new node to the canvas">
+                            Add Node
+                            <DropDownButton.Flyout>
+                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                    <MenuItem Header="Number Producer"
+                                              Command="{Binding AddNodeCommand}"
+                                              CommandParameter="Number Producer"/>
+                                    <MenuItem Header="Number Reporter"
+                                              Command="{Binding AddNodeCommand}"
+                                              CommandParameter="Number Reporter"/>
+                                    <MenuItem Header="Arithmetic Transform"
+                                              Command="{Binding AddNodeCommand}"
+                                              CommandParameter="Arithmetic Transform"/>
+                                    <MenuItem Header="Random Number Generator"
+                                              Command="{Binding AddNodeCommand}"
+                                              CommandParameter="Random Number Generator"/>
+                                    <MenuItem Header="Pass Filter"
+                                              Command="{Binding AddNodeCommand}"
+                                              CommandParameter="Pass Filter"/>
+                                </MenuFlyout>
+                            </DropDownButton.Flyout>
+                        </DropDownButton>
+                    </DockPanel>
+                </Border>
+
+                <!-- View Group -->
+                <Border Classes="ribbon-group">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Bottom"
+                                   Text="View"
+                                   Classes="ribbon-group-label"/>
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <ToggleButton Classes="ribbon-button"
+                                          IsChecked="{Binding IsPropertiesPanelVisible}"
+                                          ToolTip.Tip="Show or hide the node properties panel">
+                                Properties
+                            </ToggleButton>
+                            <Button Classes="ribbon-button"
+                                    ToolTip.Tip="View and edit the graph name and version">
+                                Graph Info
+                                <Button.Flyout>
+                                    <Flyout Placement="Bottom">
+                                        <StackPanel Spacing="6" Width="200" Margin="8">
+                                            <TextBlock Text="Graph Properties" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Name" FontSize="11"/>
+                                            <TextBox Text="{Binding GraphName}" Watermark="Untitled"/>
+                                            <TextBlock Text="Version" FontSize="11"/>
+                                            <TextBox Text="{Binding GraphVersion}" Watermark="0.0.0"/>
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Help Group -->
+                <Border Classes="ribbon-group">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Bottom"
+                                   Text="Help"
+                                   Classes="ribbon-group-label"/>
+                        <Button Classes="ribbon-button"
+                                Click="OnAboutClick"
+                                ToolTip.Tip="About Avalonia Node Editor">
+                            About
+                        </Button>
+                    </DockPanel>
+                </Border>
+
+            </StackPanel>
+        </Border>
 
         <Grid>
             <Grid.ColumnDefinitions>
@@ -59,12 +192,13 @@
                 <ColumnDefinition Width="4"/>
                 <!-- Node canvas -->
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="4"/>
-                <!-- Properties panel -->
-                <ColumnDefinition Width="240" MinWidth="160" MaxWidth="400"/>
+                <!-- Right splitter - Auto so it collapses when properties panel is hidden -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- Properties panel - Auto so it collapses when hidden -->
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- ─── Toolbox ─────────────────────────────────────────────────── -->
+            <!-- Toolbox -->
             <Border Grid.Column="0"
                     BorderThickness="0,0,1,0"
                     BorderBrush="{DynamicResource PanelBorderBrush}"
@@ -104,7 +238,7 @@
                           Background="Transparent"
                           HorizontalAlignment="Stretch"/>
 
-            <!-- ─── Node editor canvas ──────────────────────────────────────── -->
+            <!-- Node editor canvas -->
             <!-- Border provides explicit layout bounds so NodifyEditor's infinite Canvas
                  is clipped to this Grid column and cannot bleed over adjacent panels. -->
             <Border Grid.Column="2" ClipToBounds="True">
@@ -147,14 +281,18 @@
             </nodify:NodifyEditor>
             </Border>
 
-            <!-- Splitter right -->
+            <!-- Splitter right - hidden when properties panel is not visible -->
             <GridSplitter Grid.Column="3"
+                          Width="4"
+                          IsVisible="{Binding IsPropertiesPanelVisible}"
                           ResizeDirection="Columns"
                           Background="Transparent"
                           HorizontalAlignment="Stretch"/>
 
-            <!-- ─── Properties panel ────────────────────────────────────────── -->
+            <!-- Properties panel -->
             <Border Grid.Column="4"
+                    Width="240"
+                    IsVisible="{Binding IsPropertiesPanelVisible}"
                     BorderThickness="1,0,0,0"
                     BorderBrush="{DynamicResource PanelBorderBrush}"
                     Background="{DynamicResource PanelBackgroundBrush}">
@@ -164,15 +302,7 @@
                                FontWeight="SemiBold"
                                Margin="8,8,8,4"/>
 
-                    <!-- Graph-level properties -->
-                    <StackPanel DockPanel.Dock="Top" Margin="8,4" Spacing="4">
-                        <TextBlock Text="Graph Name" FontSize="11"/>
-                        <TextBox Text="{Binding GraphName}" Watermark="Untitled"/>
-                        <TextBlock Text="Graph Version" FontSize="11"/>
-                        <TextBox Text="{Binding GraphVersion}" Watermark="0.0.0"/>
-                    </StackPanel>
-
-                    <Separator DockPanel.Dock="Top" Margin="8,6"/>
+                    <Separator DockPanel.Dock="Top" Margin="8,4"/>
 
                     <!-- Empty state hint -->
                     <TextBlock DockPanel.Dock="Top"
@@ -306,4 +436,3 @@
     </DockPanel>
 
 </Window>
-

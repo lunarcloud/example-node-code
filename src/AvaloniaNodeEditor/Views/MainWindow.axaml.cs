@@ -8,6 +8,8 @@ using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using AvaloniaNodeEditor.ViewModels;
 using NodifyM.Avalonia.Controls;
+using Key = Avalonia.Input.Key;
+using KeyModifiers = Avalonia.Input.KeyModifiers;
 
 namespace AvaloniaNodeEditor.Views;
 
@@ -206,5 +208,32 @@ public partial class MainWindow : Window
         using var reader = new StreamReader(stream);
         var json = await reader.ReadToEndAsync();
         vm.DeserializeGraph(json);
+    }
+
+    /// <summary>Shows the About dialog.</summary>
+    private async void OnAboutClick(object? sender, RoutedEventArgs e)
+    {
+        var dialog = new AboutDialog();
+        await dialog.ShowDialog(this);
+    }
+
+    /// <inheritdoc/>
+    protected override void OnKeyDown(KeyEventArgs e)
+    {
+        base.OnKeyDown(e);
+
+        if (e.KeyModifiers == KeyModifiers.Control)
+        {
+            if (e.Key == Key.S)
+            {
+                OnSaveClick(null, new RoutedEventArgs());
+                e.Handled = true;
+            }
+            else if (e.Key == Key.O)
+            {
+                OnLoadClick(null, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
     }
 }

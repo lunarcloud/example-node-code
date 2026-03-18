@@ -1,0 +1,33 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="220"
+        x:Class="AvaloniaNodeEditor.Views.AboutDialog"
+        Title="About Avalonia Node Editor"
+        Width="400"
+        Height="220"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <StackPanel Margin="28" Spacing="12" VerticalAlignment="Center">
+        <TextBlock Text="Avalonia Node Editor"
+                   FontSize="20"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center"/>
+        <TextBlock Text="A cross-platform visual node graph editor built with Avalonia UI and NodifyM.Avalonia."
+                   TextWrapping="Wrap"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"/>
+        <TextBlock Text="Avalonia UI 11.3  ·  NodifyM.Avalonia 1.1.9  ·  .NET 10"
+                   FontSize="11"
+                   Opacity="0.6"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"/>
+        <Button Content="OK"
+                HorizontalAlignment="Center"
+                MinWidth="80"
+                Click="OnOkClick"/>
+    </StackPanel>
+
+</Window>
