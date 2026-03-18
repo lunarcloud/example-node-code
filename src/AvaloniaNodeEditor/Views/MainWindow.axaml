@@ -11,11 +11,27 @@
         Icon="/Assets/avalonia-logo.ico"
         Title="Avalonia Node Editor">
 
-    <!-- Connector display template shared by all nodes -->
+    <!-- Connector display templates with labels -->
     <Window.Resources>
-        <DataTemplate x:Key="ConnectorTemplate" x:DataType="vm:ConnectorViewModel">
-            <nodify:Connector IsConnected="{Binding IsConnected}"
-                              Anchor="{Binding Anchor, Mode=TwoWay}" />
+        <DataTemplate x:Key="InputConnectorTemplate" x:DataType="vm:ConnectorViewModel">
+            <StackPanel Orientation="Horizontal">
+                <nodify:Connector IsConnected="{Binding IsConnected}"
+                                  Anchor="{Binding Anchor, Mode=TwoWay}" />
+                <TextBlock Text="{Binding Name}"
+                           VerticalAlignment="Center"
+                           Margin="4,0,0,0"
+                           FontSize="12" />
+            </StackPanel>
+        </DataTemplate>
+        <DataTemplate x:Key="OutputConnectorTemplate" x:DataType="vm:ConnectorViewModel">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Name}"
+                           VerticalAlignment="Center"
+                           Margin="0,0,4,0"
+                           FontSize="12" />
+                <nodify:Connector IsConnected="{Binding IsConnected}"
+                                  Anchor="{Binding Anchor, Mode=TwoWay}" />
+            </StackPanel>
         </DataTemplate>
     </Window.Resources>
 
@@ -108,8 +124,8 @@
                                      IsSelected="{Binding IsSelected, Mode=TwoWay}"
                                      Input="{Binding Inputs}"
                                      Output="{Binding Outputs}"
-                                     InputConnectorTemplate="{StaticResource ConnectorTemplate}"
-                                     OutputConnectorTemplate="{StaticResource ConnectorTemplate}" />
+                                     InputConnectorTemplate="{StaticResource InputConnectorTemplate}"
+                                     OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}" />
                     </DataTemplate>
                 </nodify:NodifyEditor.ItemTemplate>
 
