@@ -19,21 +19,12 @@ public partial class MainWindow : Window
     private static readonly DataFormat<string> NodeTypeFormat =
         DataFormat.CreateStringApplicationFormat("NodeType");
 
-    private Point? _toolboxDragStart;
-    private string? _toolboxDragNodeType;
+    private Point? _galleryDragStart;
+    private string? _galleryDragNodeType;
 
     public MainWindow()
     {
         InitializeComponent();
-
-        // Subscribe to toolbox pointer events for drag detection.
-        // handledEventsToo: true is required because ListBoxItem marks PointerPressed
-        // as handled during selection, so we must opt-in to see already-handled events.
-        ToolboxList.AddHandler(InputElement.PointerPressedEvent, OnToolboxPointerPressed,
-            RoutingStrategies.Bubble, handledEventsToo: true);
-        ToolboxList.AddHandler(InputElement.PointerMovedEvent, OnToolboxPointerMoved,
-            RoutingStrategies.Bubble, handledEventsToo: true);
-        ToolboxList.AddHandler(InputElement.PointerCaptureLostEvent, OnToolboxPointerCaptureLost);
 
         // Subscribe to NodifyEditor drag-and-drop events.
         DragDrop.SetAllowDrop(NodeEditorControl, true);
@@ -41,45 +32,68 @@ public partial class MainWindow : Window
         NodeEditorControl.AddHandler(DragDrop.DropEvent, OnEditorDrop);
     }
 
-    // ── Toolbox drag-start ─────────────────────────────────────────────────
+    // ── Gallery drag-start — wired up when the Gallery control is loaded ───
 
-    private void OnToolboxPointerPressed(object? sender, PointerPressedEventArgs e)
+    /// <summary>
+    /// Called when the NodeGallery control is loaded. Wires up pointer events for
+    /// drag detection so gallery items can be dragged to the canvas.
+    /// </summary>
+    private void OnNodeGalleryLoaded(object? sender, RoutedEventArgs e)
     {
-        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed)
+        if (sender is not Control gallery)
         {
             return;
         }
 
-        _toolboxDragStart = e.GetPosition(null);
-        // SelectedItem is already updated because ListBoxItem marks PointerPressed as
-        // handled (completing its own selection logic) before this handler fires.
-        _toolboxDragNodeType = ToolboxList.SelectedItem as string;
+        // handledEventsToo: true is required because GalleryItem (ListBoxItem) marks
+        // PointerPressed as handled during selection before the event bubbles up.
+        gallery.AddHandler(InputElement.PointerPressedEvent, OnGalleryPointerPressed,
+            RoutingStrategies.Bubble, handledEventsToo: true);
+        gallery.AddHandler(InputElement.PointerMovedEvent, OnGalleryPointerMoved,
+            RoutingStrategies.Bubble, handledEventsToo: true);
+        gallery.AddHandler(InputElement.PointerCaptureLostEvent, OnGalleryPointerCaptureLost);
     }
 
-    private async void OnToolboxPointerMoved(object? sender, PointerEventArgs e)
+    private void OnGalleryPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_toolboxDragStart is null || _toolboxDragNodeType is null)
+        if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        _galleryDragStart = e.GetPosition(null);
+        // SelectedItem is already updated because GalleryItem (ListBoxItem) marks
+        // PointerPressed as handled (completing its own selection) before this fires.
+        if (NodeGallery?.SelectedItem is Control selectedItem)
+        {
+            _galleryDragNodeType = selectedItem.Tag as string;
+        }
+    }
+
+    private async void OnGalleryPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_galleryDragStart is null || _galleryDragNodeType is null)
         {
             return;
         }
 
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed)
         {
-            _toolboxDragStart = null;
-            _toolboxDragNodeType = null;
+            _galleryDragStart = null;
+            _galleryDragNodeType = null;
             return;
         }
 
         // Only start the drag after the pointer has moved a minimum distance.
-        var delta = e.GetPosition(null) - _toolboxDragStart.Value;
+        var delta = e.GetPosition(null) - _galleryDragStart.Value;
         if (Math.Abs(delta.X) < 4 && Math.Abs(delta.Y) < 4)
         {
             return;
         }
 
-        var nodeType = _toolboxDragNodeType;
-        _toolboxDragStart = null;
-        _toolboxDragNodeType = null;
+        var nodeType = _galleryDragNodeType;
+        _galleryDragStart = null;
+        _galleryDragNodeType = null;
 
         try
         {
@@ -93,10 +107,10 @@ public partial class MainWindow : Window
         }
     }
 
-    private void OnToolboxPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    private void OnGalleryPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
     {
-        _toolboxDragStart = null;
-        _toolboxDragNodeType = null;
+        _galleryDragStart = null;
+        _galleryDragNodeType = null;
     }
 
     // ── NodifyEditor drop ──────────────────────────────────────────────────
@@ -131,18 +145,6 @@ public partial class MainWindow : Window
         var drop = e.GetPosition(editor);
         var canvasPos = new Point(drop.X - editor.OffsetX, drop.Y - editor.OffsetY);
         vm.AddNodeAt(nodeType, canvasPos);
-    }
-
-    // ── Toolbox double-click (fallback) ────────────────────────────────────
-
-    /// <summary>Adds the double-clicked toolbox entry as a new node on the canvas.</summary>
-    private void OnToolboxDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        if (sender is ListBox { SelectedItem: string nodeType } &&
-            DataContext is MainWindowViewModel vm)
-        {
-            vm.AddNodeCommand.Execute(nodeType);
-        }
     }
 
     // ── Save / Load ────────────────────────────────────────────────────────
