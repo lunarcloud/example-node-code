@@ -35,49 +35,10 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://NodifyM.Avalonia/Styles/ControlStyles.axaml" />
+        <StyleInclude Source="avares://AvaloniaUI.Ribbon/Styles/Fluent/AvaloniaRibbon.axaml" />
         <!-- Red border on TextBox when node name is a duplicate -->
         <Style Selector="TextBox.nameError">
             <Setter Property="BorderBrush" Value="Red"/>
-        </Style>
-        <!-- Ribbon toolbar container -->
-        <Style Selector="Border.ribbon-container">
-            <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource PanelBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-            <Setter Property="Padding" Value="4,4,4,0"/>
-        </Style>
-        <!-- Ribbon group visual separator -->
-        <Style Selector="Border.ribbon-group">
-            <Setter Property="BorderBrush" Value="{DynamicResource PanelBorderBrush}"/>
-            <Setter Property="BorderThickness" Value="0,0,1,0"/>
-            <Setter Property="Padding" Value="6,4,6,4"/>
-        </Style>
-        <!-- Group label shown below each ribbon group's buttons -->
-        <Style Selector="TextBlock.ribbon-group-label">
-            <Setter Property="FontSize" Value="10"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Setter Property="Opacity" Value="0.6"/>
-            <Setter Property="Margin" Value="0,2,0,0"/>
-        </Style>
-        <!-- Uniform sizing for ribbon buttons and toggle buttons -->
-        <Style Selector="Button.ribbon-button">
-            <Setter Property="MinWidth" Value="44"/>
-            <Setter Property="Padding" Value="8,6"/>
-        </Style>
-        <Style Selector="ToggleButton.ribbon-button">
-            <Setter Property="MinWidth" Value="44"/>
-            <Setter Property="Padding" Value="8,6"/>
-        </Style>
-        <Style Selector="DropDownButton.ribbon-button">
-            <Setter Property="MinWidth" Value="44"/>
-            <Setter Property="Padding" Value="8,6"/>
-        </Style>
-        <!-- Icon glyph inside ribbon buttons -->
-        <Style Selector="TextBlock.ribbon-icon">
-            <Setter Property="FontFamily" Value="{StaticResource NotoSymbolsFont}"/>
-            <Setter Property="FontSize" Value="18"/>
-            <Setter Property="HorizontalAlignment" Value="Center"/>
-            <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
     </Application.Styles>
 </Application>

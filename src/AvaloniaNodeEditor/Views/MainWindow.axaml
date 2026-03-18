@@ -5,6 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:nodify="clr-namespace:NodifyM.Avalonia.Controls;assembly=NodifyM.Avalonia"
+        xmlns:ribbon="clr-namespace:AvaloniaUI.Ribbon;assembly=AvaloniaUI.Ribbon"
         mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="800"
         x:Class="AvaloniaNodeEditor.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -47,120 +48,130 @@
     </Design.DataContext>
 
     <DockPanel>
-        <!-- Ribbon Toolbar -->
-        <Border DockPanel.Dock="Top"
-                Classes="ribbon-container">
-            <StackPanel Orientation="Horizontal" Spacing="0">
+        <!-- Ribbon Toolbar — structure: Ribbon.Tabs > RibbonTab.Groups > RibbonGroupBox > buttons -->
+        <ribbon:Ribbon DockPanel.Dock="Top" x:CompileBindings="False">
+            <ribbon:Ribbon.Tabs>
+                <ribbon:RibbonTab Header="Home">
+                    <ribbon:RibbonTab.Groups>
 
-                <!-- File Group -->
-                <Border Classes="ribbon-group">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Bottom"
-                                   Text="File"
-                                   Classes="ribbon-group-label"/>
-                        <StackPanel Orientation="Horizontal" Spacing="2">
-                            <Button Classes="ribbon-button"
-                                    Command="{Binding NewGraphCommand}"
-                                    ToolTip.Tip="New graph (Ctrl+N)"
-                                    AutomationProperties.Name="New graph">
-                                <TextBlock Text="🗋" Classes="ribbon-icon"/>
-                            </Button>
-                            <Button Classes="ribbon-button"
-                                    Click="OnSaveClick"
-                                    ToolTip.Tip="Save graph (Ctrl+S)"
-                                    AutomationProperties.Name="Save graph">
-                                <TextBlock Text="🖴" Classes="ribbon-icon"/>
-                            </Button>
-                            <Button Classes="ribbon-button"
-                                    Click="OnLoadClick"
-                                    ToolTip.Tip="Open graph (Ctrl+O)"
-                                    AutomationProperties.Name="Open graph">
-                                <TextBlock Text="🗁" Classes="ribbon-icon"/>
-                            </Button>
-                        </StackPanel>
-                    </DockPanel>
-                </Border>
+                        <!-- File Group -->
+                        <ribbon:RibbonGroupBox Header="File">
+                            <ribbon:RibbonButton Content="New"
+                                                 Command="{Binding NewGraphCommand}"
+                                                 ToolTip.Tip="New graph (Ctrl+N)"
+                                                 AutomationProperties.Name="New graph">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🗋"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Save"
+                                                 Click="OnSaveClick"
+                                                 ToolTip.Tip="Save graph (Ctrl+S)"
+                                                 AutomationProperties.Name="Save graph">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🖴"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Open"
+                                                 Click="OnLoadClick"
+                                                 ToolTip.Tip="Open graph (Ctrl+O)"
+                                                 AutomationProperties.Name="Open graph">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🗁"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                        </ribbon:RibbonGroupBox>
 
-                <!-- Edit Group -->
-                <Border Classes="ribbon-group">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Bottom"
-                                   Text="Edit"
-                                   Classes="ribbon-group-label"/>
-                        <StackPanel Orientation="Horizontal" Spacing="2">
-                            <Button Classes="ribbon-button"
-                                    Command="{Binding CopyNodeCommand}"
-                                    ToolTip.Tip="Copy selected node (Ctrl+C)"
-                                    AutomationProperties.Name="Copy node">
-                                <TextBlock Text="🗐" Classes="ribbon-icon"/>
-                            </Button>
-                            <Button Classes="ribbon-button"
-                                    Command="{Binding PasteNodeCommand}"
-                                    ToolTip.Tip="Paste copied node (Ctrl+V)"
-                                    AutomationProperties.Name="Paste node">
-                                <TextBlock Text="📋" Classes="ribbon-icon"/>
-                            </Button>
-                            <Button Classes="ribbon-button"
-                                    Command="{Binding DeleteNodeCommand}"
-                                    ToolTip.Tip="Delete selected node (Del)"
-                                    AutomationProperties.Name="Delete node">
-                                <TextBlock Text="🗑" Classes="ribbon-icon"/>
-                            </Button>
-                        </StackPanel>
-                    </DockPanel>
-                </Border>
+                        <!-- Edit Group -->
+                        <ribbon:RibbonGroupBox Header="Edit">
+                            <ribbon:RibbonButton Content="Copy"
+                                                 Command="{Binding CopyNodeCommand}"
+                                                 ToolTip.Tip="Copy selected node (Ctrl+C)"
+                                                 AutomationProperties.Name="Copy node">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🗐"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Paste"
+                                                 Command="{Binding PasteNodeCommand}"
+                                                 ToolTip.Tip="Paste copied node (Ctrl+V)"
+                                                 AutomationProperties.Name="Paste node">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="📋"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Delete"
+                                                 Command="{Binding DeleteNodeCommand}"
+                                                 ToolTip.Tip="Delete selected node (Del)"
+                                                 AutomationProperties.Name="Delete node">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🗑"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                        </ribbon:RibbonGroupBox>
 
-                <!-- Nodes Group -->
-                <Border Classes="ribbon-group">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Bottom"
-                                   Text="Nodes"
-                                   Classes="ribbon-group-label"/>
-                        <DropDownButton Classes="ribbon-button"
-                                        x:CompileBindings="False"
-                                        ToolTip.Tip="Add a new node to the canvas"
-                                        AutomationProperties.Name="Add node">
-                            <TextBlock Text="✚" Classes="ribbon-icon"/>
-                            <DropDownButton.Flyout>
-                                <MenuFlyout Placement="BottomEdgeAlignedLeft">
-                                    <MenuItem Header="Number Producer"
-                                              Command="{Binding AddNodeCommand}"
-                                              CommandParameter="Number Producer"/>
-                                    <MenuItem Header="Number Reporter"
-                                              Command="{Binding AddNodeCommand}"
-                                              CommandParameter="Number Reporter"/>
-                                    <MenuItem Header="Arithmetic Transform"
-                                              Command="{Binding AddNodeCommand}"
-                                              CommandParameter="Arithmetic Transform"/>
-                                    <MenuItem Header="Random Number Generator"
-                                              Command="{Binding AddNodeCommand}"
-                                              CommandParameter="Random Number Generator"/>
-                                    <MenuItem Header="Pass Filter"
-                                              Command="{Binding AddNodeCommand}"
-                                              CommandParameter="Pass Filter"/>
-                                </MenuFlyout>
-                            </DropDownButton.Flyout>
-                        </DropDownButton>
-                    </DockPanel>
-                </Border>
+                        <!-- Nodes Group -->
+                        <ribbon:RibbonGroupBox Header="Nodes">
+                            <!-- Standard DropDownButton: RibbonDropDownButton does not expose a Flyout property -->
+                            <DropDownButton Padding="8,6"
+                                            ToolTip.Tip="Add a new node to the canvas"
+                                            AutomationProperties.Name="Add node">
+                                <TextBlock Text="✚"
+                                           FontFamily="{StaticResource NotoSymbolsFont}"
+                                           FontSize="24"/>
+                                <DropDownButton.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedLeft">
+                                        <MenuItem Header="Number Producer"
+                                                  Command="{Binding AddNodeCommand}"
+                                                  CommandParameter="Number Producer"/>
+                                        <MenuItem Header="Number Reporter"
+                                                  Command="{Binding AddNodeCommand}"
+                                                  CommandParameter="Number Reporter"/>
+                                        <MenuItem Header="Arithmetic Transform"
+                                                  Command="{Binding AddNodeCommand}"
+                                                  CommandParameter="Arithmetic Transform"/>
+                                        <MenuItem Header="Random Number Generator"
+                                                  Command="{Binding AddNodeCommand}"
+                                                  CommandParameter="Random Number Generator"/>
+                                        <MenuItem Header="Pass Filter"
+                                                  Command="{Binding AddNodeCommand}"
+                                                  CommandParameter="Pass Filter"/>
+                                    </MenuFlyout>
+                                </DropDownButton.Flyout>
+                            </DropDownButton>
+                        </ribbon:RibbonGroupBox>
 
-                <!-- View Group -->
-                <Border Classes="ribbon-group">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Bottom"
-                                   Text="View"
-                                   Classes="ribbon-group-label"/>
-                        <StackPanel Orientation="Horizontal" Spacing="2">
-                            <ToggleButton Classes="ribbon-button"
-                                          IsChecked="{Binding IsPropertiesPanelVisible}"
-                                          ToolTip.Tip="Show or hide the node properties panel"
-                                          AutomationProperties.Name="Toggle properties panel">
-                                <TextBlock Text="🗒" Classes="ribbon-icon"/>
-                            </ToggleButton>
-                            <Button Classes="ribbon-button"
+                        <!-- View Group -->
+                        <ribbon:RibbonGroupBox Header="View">
+                            <ribbon:RibbonToggleButton Content="Properties"
+                                                        IsChecked="{Binding IsPropertiesPanelVisible}"
+                                                        ToolTip.Tip="Show or hide the node properties panel"
+                                                        AutomationProperties.Name="Toggle properties panel">
+                                <ribbon:RibbonToggleButton.LargeIcon>
+                                    <TextBlock Text="🗒"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonToggleButton.LargeIcon>
+                            </ribbon:RibbonToggleButton>
+                            <!-- Standard Button with Flyout: RibbonDropDownButton does not expose a Flyout property -->
+                            <Button Padding="8,6"
                                     ToolTip.Tip="View and edit the graph name and version"
                                     AutomationProperties.Name="Graph properties">
-                                <TextBlock Text="🛈" Classes="ribbon-icon"/>
+                                <TextBlock Text="🛈"
+                                           FontFamily="{StaticResource NotoSymbolsFont}"
+                                           FontSize="24"/>
                                 <Button.Flyout>
                                     <Flyout Placement="Bottom">
                                         <StackPanel Spacing="6" Width="200" Margin="8">
@@ -173,27 +184,26 @@
                                     </Flyout>
                                 </Button.Flyout>
                             </Button>
-                        </StackPanel>
-                    </DockPanel>
-                </Border>
+                        </ribbon:RibbonGroupBox>
 
-                <!-- Help Group -->
-                <Border Classes="ribbon-group">
-                    <DockPanel>
-                        <TextBlock DockPanel.Dock="Bottom"
-                                   Text="Help"
-                                   Classes="ribbon-group-label"/>
-                        <Button Classes="ribbon-button"
-                                Click="OnAboutClick"
-                                ToolTip.Tip="About Avalonia Node Editor"
-                                AutomationProperties.Name="About">
-                            <TextBlock Text="❓" Classes="ribbon-icon"/>
-                        </Button>
-                    </DockPanel>
-                </Border>
+                        <!-- Help Group -->
+                        <ribbon:RibbonGroupBox Header="Help">
+                            <ribbon:RibbonButton Content="About"
+                                                 Click="OnAboutClick"
+                                                 ToolTip.Tip="About Avalonia Node Editor"
+                                                 AutomationProperties.Name="About">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="❓"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                        </ribbon:RibbonGroupBox>
 
-            </StackPanel>
-        </Border>
+                    </ribbon:RibbonTab.Groups>
+                </ribbon:RibbonTab>
+            </ribbon:Ribbon.Tabs>
+        </ribbon:Ribbon>
 
         <Grid>
             <Grid.ColumnDefinitions>
