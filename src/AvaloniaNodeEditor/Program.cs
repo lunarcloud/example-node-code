@@ -1,5 +1,6 @@
 using System;
 using Avalonia;
+using Avalonia.ReactiveUI;
 
 namespace AvaloniaNodeEditor;
 
@@ -17,5 +18,6 @@ sealed class Program
         => AppBuilder.Configure<App>()
             .UsePlatformDetect()
             .WithInterFont()
+            .UseReactiveUI()
             .LogToTrace();
 }

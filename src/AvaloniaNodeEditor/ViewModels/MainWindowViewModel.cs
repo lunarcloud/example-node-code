@@ -31,6 +31,10 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty]
     private string _graphVersion = string.Empty;
 
+    /// <summary>Whether the node properties panel is currently visible in the UI.</summary>
+    [ObservableProperty]
+    private bool _isPropertiesPanelVisible;
+
     /// <summary>The node types available in the toolbox.</summary>
     public IReadOnlyList<string> ToolboxItems { get; } =
     [
@@ -40,6 +44,16 @@ public partial class MainWindowViewModel : ViewModelBase
         "Random Number Generator",
         "Pass Filter",
     ];
+
+    /// <summary>The node currently held in the in-memory clipboard for paste operations.</summary>
+    private NodeViewModel? _clipboardNode;
+
+    /// <summary>Notifies copy and delete commands when the selected node changes.</summary>
+    partial void OnSelectedNodeChanged(NodeViewModel? value)
+    {
+        CopyNodeCommand.NotifyCanExecuteChanged();
+        DeleteNodeCommand.NotifyCanExecuteChanged();
+    }
 
     /// <summary>Adds a new node of the given type to the canvas at a default staggered position.</summary>
     [RelayCommand]
@@ -162,6 +176,97 @@ public partial class MainWindowViewModel : ViewModelBase
             UpdateIsConnected(connection.Target);
         }
     }
+
+    /// <summary>Copies the currently selected node to the in-memory clipboard.</summary>
+    [RelayCommand(CanExecute = nameof(CanCopyNode))]
+    private void CopyNode()
+    {
+        _clipboardNode = SelectedNode;
+        PasteNodeCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool CanCopyNode() => SelectedNode is not null;
+
+    /// <summary>Pastes the clipboard node as a new node, placed 30 px below-right of the source.</summary>
+    [RelayCommand(CanExecute = nameof(CanPasteNode))]
+    private void PasteNode()
+    {
+        if (_clipboardNode is null)
+        {
+            return;
+        }
+
+        var offset = new Point(_clipboardNode.Location.X + 30, _clipboardNode.Location.Y + 30);
+        var node = CloneNode(_clipboardNode, offset);
+        if (node is null)
+        {
+            return;
+        }
+
+        node.Name = GenerateUniqueName(node.NodeType);
+        TrackNodeSelection(node);
+        TrackNodeName(node);
+        Nodes.Add(node);
+        SelectedNode = node;
+    }
+
+    private bool CanPasteNode() => _clipboardNode is not null;
+
+    /// <summary>Deletes the currently selected node and all of its connections from the canvas.</summary>
+    [RelayCommand(CanExecute = nameof(CanDeleteNode))]
+    private void DeleteNode()
+    {
+        if (SelectedNode is null)
+        {
+            return;
+        }
+
+        var node = SelectedNode;
+        var toRemove = Connections
+            .Where(c => node.Inputs.Contains(c.Target) || node.Outputs.Contains(c.Source))
+            .ToList();
+
+        foreach (var conn in toRemove)
+        {
+            Connections.Remove(conn);
+            UpdateIsConnected(conn.Source);
+            UpdateIsConnected(conn.Target);
+        }
+
+        Nodes.Remove(node);
+        SelectedNode = null;
+    }
+
+    private bool CanDeleteNode() => SelectedNode is not null;
+
+    /// <summary>Creates a copy of <paramref name="source"/> at <paramref name="position"/>, preserving all type-specific properties.</summary>
+    private static NodeViewModel? CloneNode(NodeViewModel source, Point position) =>
+        source switch
+        {
+            NumberProducerNode np => new NumberProducerNode { Location = position, Value = np.Value },
+            NumberReporterNode nr => new NumberReporterNode { Location = position, Value = nr.Value },
+            ArithmeticTransformNode at => new ArithmeticTransformNode
+            {
+                Location = position,
+                InputA = at.InputA,
+                InputB = at.InputB,
+                Operation = at.Operation,
+            },
+            RandomNumberGeneratorNode rng => new RandomNumberGeneratorNode
+            {
+                Location = position,
+                MinValue = rng.MinValue,
+                MaxValue = rng.MaxValue,
+            },
+            PassFilterNode pf => new PassFilterNode
+            {
+                Location = position,
+                FilterType = pf.FilterType,
+                Threshold = pf.Threshold,
+                UpperThreshold = pf.UpperThreshold,
+            },
+            _ => null,
+        };
 
     /// <summary>Clears all nodes and connections from the graph.</summary>
     [RelayCommand]

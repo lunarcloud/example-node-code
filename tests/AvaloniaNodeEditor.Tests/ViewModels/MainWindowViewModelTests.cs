@@ -846,4 +846,221 @@ public class MainWindowViewModelTests
         Assert.True(viewModel2.Nodes[0].Outputs[0].IsConnected);
         Assert.True(viewModel2.Nodes[1].Inputs[0].IsConnected);
     }
+
+    // ── IsPropertiesPanelVisible ─────────────────────────────────────────────
+
+    [Fact]
+    public void IsPropertiesPanelVisible_DefaultsToFalse()
+    {
+        var viewModel = new MainWindowViewModel();
+        Assert.False(viewModel.IsPropertiesPanelVisible);
+    }
+
+    [Fact]
+    public void IsPropertiesPanelVisible_CanBeSetToTrue()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.IsPropertiesPanelVisible = true;
+        Assert.True(viewModel.IsPropertiesPanelVisible);
+    }
+
+    // ── CopyNode ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void CopyNodeCommand_CannotExecute_WhenNoNodeSelected()
+    {
+        var viewModel = new MainWindowViewModel();
+        Assert.False(viewModel.CopyNodeCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void CopyNodeCommand_CanExecute_WhenNodeSelected()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        Assert.True(viewModel.CopyNodeCommand.CanExecute(null));
+    }
+
+    // ── PasteNode ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void PasteNodeCommand_CannotExecute_BeforeCopy()
+    {
+        var viewModel = new MainWindowViewModel();
+        Assert.False(viewModel.PasteNodeCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void PasteNode_AfterCopy_CreatesNewNode()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.CopyNodeCommand.Execute(null);
+
+        // Act
+        viewModel.PasteNodeCommand.Execute(null);
+
+        // Assert
+        Assert.Equal(2, viewModel.Nodes.Count);
+    }
+
+    [Fact]
+    public void PasteNode_CreatesNodeOfSameType()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Arithmetic Transform", new Point(10, 20));
+        viewModel.CopyNodeCommand.Execute(null);
+
+        // Act
+        viewModel.PasteNodeCommand.Execute(null);
+
+        // Assert
+        Assert.Equal("Arithmetic Transform", viewModel.Nodes[1].NodeType);
+    }
+
+    [Fact]
+    public void PasteNode_PlacesNodeAtOffset()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(100, 200));
+        viewModel.CopyNodeCommand.Execute(null);
+
+        // Act
+        viewModel.PasteNodeCommand.Execute(null);
+
+        // Assert — pasted node is placed 30px below-right of original
+        Assert.Equal(new Point(130, 230), viewModel.Nodes[1].Location);
+    }
+
+    [Fact]
+    public void PasteNode_GeneratesUniqueName()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        viewModel.CopyNodeCommand.Execute(null);
+
+        // Act
+        viewModel.PasteNodeCommand.Execute(null);
+
+        // Assert
+        Assert.NotEqual(viewModel.Nodes[0].Name, viewModel.Nodes[1].Name);
+    }
+
+    [Fact]
+    public void PasteNode_CopiesNumberProducerValue()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        ((NumberProducerNode)viewModel.Nodes[0]).Value = 42.5;
+        viewModel.CopyNodeCommand.Execute(null);
+
+        // Act
+        viewModel.PasteNodeCommand.Execute(null);
+
+        // Assert
+        var pasted = Assert.IsType<NumberProducerNode>(viewModel.Nodes[1]);
+        Assert.Equal(42.5, pasted.Value);
+    }
+
+    [Fact]
+    public void PasteNodeCommand_CanExecute_AfterCopy()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+
+        // Act
+        viewModel.CopyNodeCommand.Execute(null);
+
+        // Assert
+        Assert.True(viewModel.PasteNodeCommand.CanExecute(null));
+    }
+
+    // ── DeleteNode ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void DeleteNodeCommand_CannotExecute_WhenNoNodeSelected()
+    {
+        var viewModel = new MainWindowViewModel();
+        Assert.False(viewModel.DeleteNodeCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void DeleteNode_RemovesSelectedNodeFromCanvas()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        Assert.Single(viewModel.Nodes);
+
+        // Act
+        viewModel.DeleteNodeCommand.Execute(null);
+
+        // Assert
+        Assert.Empty(viewModel.Nodes);
+    }
+
+    [Fact]
+    public void DeleteNode_ClearsSelectedNode()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        Assert.NotNull(viewModel.SelectedNode);
+
+        // Act
+        viewModel.DeleteNodeCommand.Execute(null);
+
+        // Assert
+        Assert.Null(viewModel.SelectedNode);
+    }
+
+    [Fact]
+    public void DeleteNode_RemovesAttachedConnections()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+        Assert.Single(viewModel.Connections);
+
+        // Select the producer and delete it
+        viewModel.Nodes[0].IsSelected = true;
+
+        // Act
+        viewModel.DeleteNodeCommand.Execute(null);
+
+        // Assert
+        Assert.Single(viewModel.Nodes);
+        Assert.Empty(viewModel.Connections);
+    }
+
+    [Fact]
+    public void DeleteNode_UpdatesIsConnectedOnRemainingConnectors()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var reporter = viewModel.Nodes[1];
+        var target = reporter.Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+        Assert.True(target.IsConnected);
+
+        // Select producer and delete
+        viewModel.Nodes[0].IsSelected = true;
+        viewModel.DeleteNodeCommand.Execute(null);
+
+        // Assert — reporter's input connector is no longer connected
+        Assert.False(target.IsConnected);
+    }
 }

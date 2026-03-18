@@ -5,6 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:nodify="clr-namespace:NodifyM.Avalonia.Controls;assembly=NodifyM.Avalonia"
+        xmlns:ribbon="clr-namespace:AvaloniaUI.Ribbon;assembly=AvaloniaUI.Ribbon"
         mc:Ignorable="d" d:DesignWidth="1400" d:DesignHeight="800"
         x:Class="AvaloniaNodeEditor.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -35,79 +36,228 @@
         </DataTemplate>
     </Window.Resources>
 
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Ctrl+N" Command="{Binding NewGraphCommand}"/>
+        <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyNodeCommand}"/>
+        <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteNodeCommand}"/>
+        <KeyBinding Gesture="Delete" Command="{Binding DeleteNodeCommand}"/>
+    </Window.KeyBindings>
+
     <Design.DataContext>
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
     <DockPanel>
-        <!-- Menu bar -->
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="_File">
-                <MenuItem Header="_New" Command="{Binding NewGraphCommand}" HotKey="Ctrl+N"/>
-                <Separator/>
-                <MenuItem Header="_Save" Click="OnSaveClick" HotKey="Ctrl+S"/>
-                <MenuItem Header="_Load" Click="OnLoadClick" HotKey="Ctrl+O"/>
-                <Separator/>
-                <MenuItem Header="_Quit" Command="{Binding QuitCommand}"/>
-            </MenuItem>
-        </Menu>
+        <!-- Ribbon Toolbar — structure: Ribbon.Tabs > RibbonTab.Groups > RibbonGroupBox > buttons -->
+        <ribbon:Ribbon DockPanel.Dock="Top" x:CompileBindings="False">
+            <ribbon:Ribbon.Tabs>
+                <ribbon:RibbonTab Header="Home">
+                    <ribbon:RibbonTab.Groups>
+
+                        <!-- File Group -->
+                        <ribbon:RibbonGroupBox Header="File">
+                            <ribbon:RibbonButton Content="New"
+                                                 Command="{Binding NewGraphCommand}"
+                                                 ToolTip.Tip="New graph (Ctrl+N)"
+                                                 AutomationProperties.Name="New graph">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🗋"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Save"
+                                                 Click="OnSaveClick"
+                                                 ToolTip.Tip="Save graph (Ctrl+S)"
+                                                 AutomationProperties.Name="Save graph">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🖴"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Open"
+                                                 Click="OnLoadClick"
+                                                 ToolTip.Tip="Open graph (Ctrl+O)"
+                                                 AutomationProperties.Name="Open graph">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🗁"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                        </ribbon:RibbonGroupBox>
+
+                        <!-- Edit Group -->
+                        <ribbon:RibbonGroupBox Header="Edit">
+                            <ribbon:RibbonButton Content="Copy"
+                                                 Command="{Binding CopyNodeCommand}"
+                                                 ToolTip.Tip="Copy selected node (Ctrl+C)"
+                                                 AutomationProperties.Name="Copy node">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🗐"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Paste"
+                                                 Command="{Binding PasteNodeCommand}"
+                                                 ToolTip.Tip="Paste copied node (Ctrl+V)"
+                                                 AutomationProperties.Name="Paste node">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="📋"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Delete"
+                                                 Command="{Binding DeleteNodeCommand}"
+                                                 ToolTip.Tip="Delete selected node (Del)"
+                                                 AutomationProperties.Name="Delete node">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="🗑"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                        </ribbon:RibbonGroupBox>
+
+                        <!-- View Group -->
+                        <ribbon:RibbonGroupBox Header="View">
+                            <ribbon:RibbonToggleButton Content="Properties"
+                                                        IsChecked="{Binding IsPropertiesPanelVisible}"
+                                                        ToolTip.Tip="Show or hide the node properties panel"
+                                                        AutomationProperties.Name="Toggle properties panel">
+                                <ribbon:RibbonToggleButton.LargeIcon>
+                                    <TextBlock Text="🗒"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonToggleButton.LargeIcon>
+                            </ribbon:RibbonToggleButton>
+                            <!-- Standard Button with Flyout: RibbonDropDownButton does not expose a Flyout property -->
+                            <Button Padding="8,6"
+                                    ToolTip.Tip="View and edit the graph name and version"
+                                    AutomationProperties.Name="Graph properties">
+                                <TextBlock Text="🛈"
+                                           FontFamily="{StaticResource NotoSymbolsFont}"
+                                           FontSize="24"/>
+                                <Button.Flyout>
+                                    <Flyout Placement="Bottom">
+                                        <StackPanel Spacing="6" Width="200" Margin="8">
+                                            <TextBlock Text="Graph Properties" FontWeight="SemiBold"/>
+                                            <TextBlock Text="Name" FontSize="11"/>
+                                            <TextBox Text="{Binding GraphName}" Watermark="Untitled"/>
+                                            <TextBlock Text="Version" FontSize="11"/>
+                                            <TextBox Text="{Binding GraphVersion}" Watermark="0.0.0"/>
+                                        </StackPanel>
+                                    </Flyout>
+                                </Button.Flyout>
+                            </Button>
+                        </ribbon:RibbonGroupBox>
+
+                        <!-- Help Group -->
+                        <ribbon:RibbonGroupBox Header="Help">
+                            <ribbon:RibbonButton Content="About"
+                                                 Click="OnAboutClick"
+                                                 ToolTip.Tip="About Avalonia Node Editor"
+                                                 AutomationProperties.Name="About">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="❓"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                        </ribbon:RibbonGroupBox>
+
+                    </ribbon:RibbonTab.Groups>
+                </ribbon:RibbonTab>
+
+                <!-- Nodes tab replaces the toolbox side panel; drag items to the canvas -->
+                <ribbon:RibbonTab Header="Nodes">
+                    <ribbon:RibbonTab.Groups>
+                        <ribbon:RibbonGroupBox Header="Drag to canvas">
+                            <!-- Gallery extends ListBox; GalleryItem extends ListBoxItem.
+                                 Loaded event is used to wire drag handlers safely after
+                                 the ribbon tab content is instantiated. -->
+                            <ribbon:Gallery x:Name="NodeGallery"
+                                            Size="Large"
+                                            Loaded="OnNodeGalleryLoaded">
+                                <ribbon:GalleryItem Content="Number Producer"
+                                                    Tag="Number Producer"
+                                                    ToolTip.Tip="Number Producer — drag to canvas">
+                                    <ribbon:GalleryItem.LargeIcon>
+                                        <Border Width="32" Height="32" Background="#4A90D9" CornerRadius="4">
+                                            <TextBlock Text="NP" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       FontSize="11" FontWeight="Bold"/>
+                                        </Border>
+                                    </ribbon:GalleryItem.LargeIcon>
+                                </ribbon:GalleryItem>
+                                <ribbon:GalleryItem Content="Number Reporter"
+                                                    Tag="Number Reporter"
+                                                    ToolTip.Tip="Number Reporter — drag to canvas">
+                                    <ribbon:GalleryItem.LargeIcon>
+                                        <Border Width="32" Height="32" Background="#27AE60" CornerRadius="4">
+                                            <TextBlock Text="NR" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       FontSize="11" FontWeight="Bold"/>
+                                        </Border>
+                                    </ribbon:GalleryItem.LargeIcon>
+                                </ribbon:GalleryItem>
+                                <ribbon:GalleryItem Content="Arithmetic Transform"
+                                                    Tag="Arithmetic Transform"
+                                                    ToolTip.Tip="Arithmetic Transform — drag to canvas">
+                                    <ribbon:GalleryItem.LargeIcon>
+                                        <Border Width="32" Height="32" Background="#9B59B6" CornerRadius="4">
+                                            <TextBlock Text="AT" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       FontSize="11" FontWeight="Bold"/>
+                                        </Border>
+                                    </ribbon:GalleryItem.LargeIcon>
+                                </ribbon:GalleryItem>
+                                <ribbon:GalleryItem Content="Random Number Gen."
+                                                    Tag="Random Number Generator"
+                                                    ToolTip.Tip="Random Number Generator — drag to canvas">
+                                    <ribbon:GalleryItem.LargeIcon>
+                                        <Border Width="32" Height="32" Background="#E67E22" CornerRadius="4">
+                                            <TextBlock Text="RNG" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       FontSize="11" FontWeight="Bold"/>
+                                        </Border>
+                                    </ribbon:GalleryItem.LargeIcon>
+                                </ribbon:GalleryItem>
+                                <ribbon:GalleryItem Content="Pass Filter"
+                                                    Tag="Pass Filter"
+                                                    ToolTip.Tip="Pass Filter — drag to canvas">
+                                    <ribbon:GalleryItem.LargeIcon>
+                                        <Border Width="32" Height="32" Background="#16A085" CornerRadius="4">
+                                            <TextBlock Text="PF" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       FontSize="11" FontWeight="Bold"/>
+                                        </Border>
+                                    </ribbon:GalleryItem.LargeIcon>
+                                </ribbon:GalleryItem>
+                            </ribbon:Gallery>
+                        </ribbon:RibbonGroupBox>
+                    </ribbon:RibbonTab.Groups>
+                </ribbon:RibbonTab>
+            </ribbon:Ribbon.Tabs>
+        </ribbon:Ribbon>
 
         <Grid>
             <Grid.ColumnDefinitions>
-                <!-- Toolbox -->
-                <ColumnDefinition Width="200" MinWidth="140" MaxWidth="360"/>
-                <ColumnDefinition Width="4"/>
                 <!-- Node canvas -->
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="4"/>
-                <!-- Properties panel -->
-                <ColumnDefinition Width="240" MinWidth="160" MaxWidth="400"/>
+                <!-- Right splitter - Auto so it collapses when properties panel is hidden -->
+                <ColumnDefinition Width="Auto"/>
+                <!-- Properties panel - Auto so it collapses when hidden -->
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- ─── Toolbox ─────────────────────────────────────────────────── -->
-            <Border Grid.Column="0"
-                    BorderThickness="0,0,1,0"
-                    BorderBrush="{DynamicResource PanelBorderBrush}"
-                    Background="{DynamicResource PanelBackgroundBrush}">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top"
-                               Text="Toolbox"
-                               FontWeight="SemiBold"
-                               Margin="8,8,8,4"/>
-                    <TextBlock DockPanel.Dock="Top"
-                               Text="Drag to canvas or double-click to add"
-                               FontSize="11"
-                               Opacity="0.6"
-                               Margin="8,0,8,6"
-                               TextWrapping="Wrap"/>
-                    <ListBox x:Name="ToolboxList"
-                             ItemsSource="{Binding ToolboxItems}"
-                             DoubleTapped="OnToolboxDoubleTapped"
-                             x:CompileBindings="False">
-                        <ListBox.Styles>
-                            <Style Selector="ListBoxItem">
-                                <Setter Property="Padding" Value="8,6"/>
-                            </Style>
-                        </ListBox.Styles>
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}"/>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </DockPanel>
-            </Border>
-
-            <!-- Splitter left -->
-            <GridSplitter Grid.Column="1"
-                          ResizeDirection="Columns"
-                          Background="Transparent"
-                          HorizontalAlignment="Stretch"/>
-
-            <!-- ─── Node editor canvas ──────────────────────────────────────── -->
+            <!-- Node editor canvas -->
             <!-- Border provides explicit layout bounds so NodifyEditor's infinite Canvas
                  is clipped to this Grid column and cannot bleed over adjacent panels. -->
-            <Border Grid.Column="2" ClipToBounds="True">
+            <Border Grid.Column="0" ClipToBounds="True">
             <nodify:NodifyEditor x:Name="NodeEditorControl"
                                  x:CompileBindings="False"
                                  ItemsSource="{Binding Nodes}"
@@ -147,14 +297,18 @@
             </nodify:NodifyEditor>
             </Border>
 
-            <!-- Splitter right -->
-            <GridSplitter Grid.Column="3"
+            <!-- Splitter right - hidden when properties panel is not visible -->
+            <GridSplitter Grid.Column="1"
+                          Width="4"
+                          IsVisible="{Binding IsPropertiesPanelVisible}"
                           ResizeDirection="Columns"
                           Background="Transparent"
                           HorizontalAlignment="Stretch"/>
 
-            <!-- ─── Properties panel ────────────────────────────────────────── -->
-            <Border Grid.Column="4"
+            <!-- Properties panel -->
+            <Border Grid.Column="2"
+                    Width="240"
+                    IsVisible="{Binding IsPropertiesPanelVisible}"
                     BorderThickness="1,0,0,0"
                     BorderBrush="{DynamicResource PanelBorderBrush}"
                     Background="{DynamicResource PanelBackgroundBrush}">
@@ -164,15 +318,7 @@
                                FontWeight="SemiBold"
                                Margin="8,8,8,4"/>
 
-                    <!-- Graph-level properties -->
-                    <StackPanel DockPanel.Dock="Top" Margin="8,4" Spacing="4">
-                        <TextBlock Text="Graph Name" FontSize="11"/>
-                        <TextBox Text="{Binding GraphName}" Watermark="Untitled"/>
-                        <TextBlock Text="Graph Version" FontSize="11"/>
-                        <TextBox Text="{Binding GraphVersion}" Watermark="0.0.0"/>
-                    </StackPanel>
-
-                    <Separator DockPanel.Dock="Top" Margin="8,6"/>
+                    <Separator DockPanel.Dock="Top" Margin="8,4"/>
 
                     <!-- Empty state hint -->
                     <TextBlock DockPanel.Dock="Top"
@@ -306,4 +452,3 @@
     </DockPanel>
 
 </Window>
-

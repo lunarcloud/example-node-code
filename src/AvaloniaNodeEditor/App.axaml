@@ -11,6 +11,8 @@
 
     <Application.Resources>
         <ResourceDictionary>
+            <!-- Noto Sans Symbols 2 embedded font for ribbon icons -->
+            <FontFamily x:Key="NotoSymbolsFont">avares://AvaloniaNodeEditor/Assets/Fonts#Noto Sans Symbols2</FontFamily>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Default">
                     <SolidColorBrush x:Key="NodeBackgroundBrush" Color="#FFFFFF"/>
@@ -33,6 +35,7 @@
     <Application.Styles>
         <FluentTheme />
         <StyleInclude Source="avares://NodifyM.Avalonia/Styles/ControlStyles.axaml" />
+        <StyleInclude Source="avares://AvaloniaUI.Ribbon/Styles/Fluent/AvaloniaRibbon.axaml" />
         <!-- Red border on TextBox when node name is a duplicate -->
         <Style Selector="TextBox.nameError">
             <Setter Property="BorderBrush" Value="Red"/>
