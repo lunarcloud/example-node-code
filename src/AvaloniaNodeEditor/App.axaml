@@ -20,6 +20,8 @@
                     <!-- Background for toolbox and properties side panels -->
                     <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#F3F3F3"/>
                     <SolidColorBrush x:Key="PanelBorderBrush" Color="#CCCCCC"/>
+                    <!-- Tint for the canvas area where node positions are negative (x<0 or y<0) -->
+                    <SolidColorBrush x:Key="NegativeSpaceBrush" Color="#20FF4444"/>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="NodeBackgroundBrush" Color="#1C2432"/>
@@ -27,6 +29,8 @@
                     <!-- Background for toolbox and properties side panels -->
                     <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#1E1E1E"/>
                     <SolidColorBrush x:Key="PanelBorderBrush" Color="#3A3A3C"/>
+                    <!-- Tint for the canvas area where node positions are negative (x<0 or y<0) -->
+                    <SolidColorBrush x:Key="NegativeSpaceBrush" Color="#30FF4444"/>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>

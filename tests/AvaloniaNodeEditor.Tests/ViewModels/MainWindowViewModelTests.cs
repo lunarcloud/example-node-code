@@ -180,6 +180,77 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public void NodeViewModel_Location_ClampsNegativeXToZero()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(50, 50));
+        var node = viewModel.Nodes[0];
+
+        // Act — NodifyEditor can move a node to a negative x position when panning
+        node.Location = new Point(-30, 50);
+
+        // Assert — x must be clamped to 0; y is unchanged
+        Assert.Equal(new Point(0, 50), node.Location);
+    }
+
+    [Fact]
+    public void NodeViewModel_Location_ClampsNegativeYToZero()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Reporter", new Point(50, 50));
+        var node = viewModel.Nodes[0];
+
+        // Act
+        node.Location = new Point(50, -20);
+
+        // Assert — y must be clamped to 0; x is unchanged
+        Assert.Equal(new Point(50, 0), node.Location);
+    }
+
+    [Fact]
+    public void NodeViewModel_Location_ClampsNegativeBothToZero()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Arithmetic Transform", new Point(50, 50));
+        var node = viewModel.Nodes[0];
+
+        // Act
+        node.Location = new Point(-100, -200);
+
+        // Assert
+        Assert.Equal(new Point(0, 0), node.Location);
+    }
+
+    [Fact]
+    public void AddNodeAt_WithNegativePosition_ClampsToOrigin()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act — simulate a drop at negative canvas coordinates
+        viewModel.AddNodeAt("Pass Filter", new Point(-50, -80));
+
+        // Assert — the node must be placed at the origin, not off-canvas
+        Assert.Equal(new Point(0, 0), viewModel.Nodes[0].Location);
+    }
+
+    [Fact]
+    public void AddNodeAt_WithPartiallyNegativePosition_ClampsOnlyNegativeAxis()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act
+        viewModel.AddNodeAt("Number Producer", new Point(-10, 120));
+
+        // Assert — only x is clamped; y is preserved
+        Assert.Equal(new Point(0, 120), viewModel.Nodes[0].Location);
+    }
+
+    [Fact]
     public void NodeViewModel_IsSelected_IsMutable()
     {
         // Arrange — NodifyEditor.SelectItem sets node.IsSelected directly on the control;
