@@ -1,6 +1,6 @@
 using System;
-using Avalonia;
 using System.Collections.ObjectModel;
+using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AvaloniaNodeEditor.ViewModels;

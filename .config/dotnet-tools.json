@@ -43,6 +43,18 @@
       "commands": [
         "buildmark"
       ]
+    },
+    "demaconsulting.versionmark": {
+      "version": "1.0.0",
+      "commands": [
+        "versionmark"
+      ]
+    },
+    "demaconsulting.reviewmark": {
+      "version": "0.1.0",
+      "commands": [
+        "reviewmark"
+      ]
     }
   }
 }

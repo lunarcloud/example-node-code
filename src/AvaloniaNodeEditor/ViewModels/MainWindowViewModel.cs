@@ -334,7 +334,10 @@ public partial class MainWindowViewModel : ViewModelBase
     private void AddTabPassInputSlot(TabPassNode? node)
     {
         if (node is null)
+        {
             return;
+        }
+
         var name = node.GenerateNextInputSlotName();
         node.AddConnectorSlot(name, isInput: true);
         _undoRedoManager.Record(new AddTabPassSlotAction(this, node, name, isInput: true));
@@ -345,7 +348,10 @@ public partial class MainWindowViewModel : ViewModelBase
     private void AddTabPassOutputSlot(TabPassNode? node)
     {
         if (node is null)
+        {
             return;
+        }
+
         var name = node.GenerateNextOutputSlotName();
         node.AddConnectorSlot(name, isInput: false);
         _undoRedoManager.Record(new AddTabPassSlotAction(this, node, name, isInput: false));
@@ -356,14 +362,18 @@ public partial class MainWindowViewModel : ViewModelBase
     private void RemoveTabPassSlot(TabPassConnectorSlot? slot)
     {
         if (slot is null)
+        {
             return;
+        }
 
         // Locate the owning node across all tabs.
         var node = Tabs.SelectMany(t => t.Nodes)
                        .OfType<TabPassNode>()
                        .FirstOrDefault(n => n.ConnectorSlots.Contains(slot));
         if (node is null)
+        {
             return;
+        }
 
         RemoveTabPassSlotInternal(node, slot);
     }
@@ -388,10 +398,14 @@ public partial class MainWindowViewModel : ViewModelBase
         var (removed, pairRemoved) = node.RemoveConnectorSlot(slot);
 
         if (removed is not null)
+        {
             RemoveConnectionsForConnectorInAllTabs(removed);
+        }
 
         if (pairRemoved is not null)
+        {
             RemoveConnectionsForConnectorInAllTabs(pairRemoved);
+        }
     }
 
     /// <summary>Removes all connections referencing <paramref name="connector"/> from every tab.</summary>
@@ -660,7 +674,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var clone = new TabPassNode { Location = position };
         foreach (var slot in source.ConnectorSlots)
+        {
             clone.AddConnectorSlotInternal(slot.Name, slot.IsInput);
+        }
+
         return clone;
     }
 
@@ -1015,18 +1032,26 @@ public partial class MainWindowViewModel : ViewModelBase
         var node = new TabPassNode { Location = position };
 
         if (Guid.TryParse(data.PairId, out var pairId))
+        {
             node.PairId = pairId;
+        }
 
         if (data.PairIndex > 0)
+        {
             node.PairIndex = data.PairIndex;
+        }
 
         if (!string.IsNullOrEmpty(data.PairLabel))
+        {
             node.PairLabel = data.PairLabel;
+        }
 
         if (data.Slots is not null)
         {
             foreach (var slotData in data.Slots)
+            {
                 node.AddConnectorSlotInternal(slotData.Name, slotData.IsInput);
+            }
         }
 
         return node;

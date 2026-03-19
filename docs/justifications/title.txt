@@ -1,0 +1,13 @@
+---
+title: Avalonia Node Editor Requirements Justifications
+subtitle: Requirements Justifications for the Avalonia Node Editor
+author: DEMA Consulting
+description: Requirements Justifications for the Avalonia Node Editor
+lang: en-US
+keywords:
+  - Avalonia Node Editor
+  - Requirements
+  - Justifications
+  - .NET
+  - Documentation
+---

@@ -1,0 +1,13 @@
+---
+title: Avalonia Node Editor User Guide
+subtitle: A Cross-Platform Visual Node Editor
+author: DEMA Consulting
+description: A Cross-Platform Visual Node Editor built with Avalonia UI
+lang: en-US
+keywords:
+  - Avalonia Node Editor
+  - .NET
+  - Node Editor
+  - Documentation
+  - Avalonia UI
+---

@@ -108,21 +108,29 @@ public partial class TabPassNode : NodeViewModel
 
         ConnectorSlots.Add(slot);
         if (isInput)
+        {
             Inputs.Add(new ConnectorViewModel { Name = name });
+        }
         else
+        {
             Outputs.Add(new ConnectorViewModel { Name = name });
+        }
     }
 
     private void OnSlotPropertyChanging(object? sender, System.ComponentModel.PropertyChangingEventArgs e)
     {
         if (e.PropertyName == nameof(TabPassConnectorSlot.Name) && sender is TabPassConnectorSlot slot)
+        {
             _pendingSlotRenames.TryAdd(slot, slot.Name);
+        }
     }
 
     private void OnSlotPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(TabPassConnectorSlot.Name) && sender is TabPassConnectorSlot slot)
+        {
             SyncSlotNameChange(slot);
+        }
     }
 
     /// <summary>
@@ -133,13 +141,19 @@ public partial class TabPassNode : NodeViewModel
     {
         // Always consume the pending rename entry even when suppressing recursive sync.
         if (!_pendingSlotRenames.Remove(changedSlot, out var oldName))
+        {
             return;
+        }
 
         if (_isSyncingSlotName)
+        {
             return;
+        }
 
         if (oldName == changedSlot.Name)
+        {
             return;
+        }
 
         var newName = changedSlot.Name;
 
@@ -147,7 +161,9 @@ public partial class TabPassNode : NodeViewModel
         var ownConnectors = changedSlot.IsInput ? Inputs : Outputs;
         var ownConnector = ownConnectors.FirstOrDefault(c => c.Name == oldName);
         if (ownConnector is not null)
+        {
             ownConnector.Name = newName;
+        }
 
         // Propagate to the paired node (mirrored direction, same name).
         if (Pair is not null)
@@ -158,12 +174,16 @@ public partial class TabPassNode : NodeViewModel
                 var pairSlot = Pair.ConnectorSlots.FirstOrDefault(
                     s => s.Name == oldName && s.IsInput != changedSlot.IsInput);
                 if (pairSlot is not null)
+                {
                     pairSlot.Name = newName;
+                }
 
                 var pairConnectors = changedSlot.IsInput ? Pair.Outputs : Pair.Inputs;
                 var pairConnector = pairConnectors.FirstOrDefault(c => c.Name == oldName);
                 if (pairConnector is not null)
+                {
                     pairConnector.Name = newName;
+                }
             }
             finally
             {
@@ -183,7 +203,10 @@ public partial class TabPassNode : NodeViewModel
         var removed = RemoveConnectorSlotInternal(slot.Name, slot.IsInput);
         ConnectorViewModel? pairRemoved = null;
         if (Pair is not null)
+        {
             pairRemoved = Pair.RemoveConnectorSlotInternal(slot.Name, !slot.IsInput);
+        }
+
         return (removed, pairRemoved);
     }
 
@@ -226,7 +249,10 @@ public partial class TabPassNode : NodeViewModel
     {
         int index = 1;
         while (ConnectorSlots.Any(s => s.Name == $"In {index}"))
+        {
             index++;
+        }
+
         return $"In {index}";
     }
 
@@ -235,7 +261,10 @@ public partial class TabPassNode : NodeViewModel
     {
         int index = 1;
         while (ConnectorSlots.Any(s => s.Name == $"Out {index}"))
+        {
             index++;
+        }
+
         return $"Out {index}";
     }
 }

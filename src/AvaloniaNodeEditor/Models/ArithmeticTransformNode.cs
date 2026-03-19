@@ -1,5 +1,5 @@
-using CommunityToolkit.Mvvm.ComponentModel;
 using AvaloniaNodeEditor.ViewModels;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AvaloniaNodeEditor.Models;
 
