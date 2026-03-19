@@ -32,6 +32,13 @@ public partial class MainWindow : Window
     private double _middlePanStartOffsetX;
     private double _middlePanStartOffsetY;
 
+    // ── Node-drag state ─────────────────────────────────────────────────────
+    private bool _leftButtonDownOnNode;
+
+    // ── Tab-rename state ────────────────────────────────────────────────────
+    private string? _tabRenameOldName;
+    private TabViewModel? _tabBeingRenamed;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -61,6 +68,13 @@ public partial class MainWindow : Window
         NodeEditorControl.AddHandler(
             InputElement.PointerReleasedEvent,
             OnEditorPointerReleasedMiddle,
+            RoutingStrategies.Bubble,
+            handledEventsToo: true);
+
+        // Bubble handler for left-button release: finalises node-drag for undo recording.
+        NodeEditorControl.AddHandler(
+            InputElement.PointerReleasedEvent,
+            OnEditorPointerReleasedLeft,
             RoutingStrategies.Bubble,
             handledEventsToo: true);
 
@@ -140,10 +154,21 @@ public partial class MainWindow : Window
         //        Shift+left (selection rectangle), Alt+left (connection removal).
         if (props.IsLeftButtonPressed
             && !e.KeyModifiers.HasFlag(KeyModifiers.Shift)
-            && !e.KeyModifiers.HasFlag(KeyModifiers.Alt)
-            && !IsSourceOnInteractiveElement(e))
+            && !e.KeyModifiers.HasFlag(KeyModifiers.Alt))
         {
-            e.Handled = true;
+            if (IsSourceOnInteractiveElement(e))
+            {
+                // A node (or connector/connection) was pressed — capture pre-drag locations.
+                _leftButtonDownOnNode = true;
+                if (DataContext is MainWindowViewModel vm)
+                {
+                    vm.BeginNodeDrag();
+                }
+            }
+            else
+            {
+                e.Handled = true;
+            }
         }
     }
 
@@ -184,6 +209,24 @@ public partial class MainWindow : Window
             _isMiddleMousePanning = false;
             e.Pointer.Capture(null);
             e.Handled = true;
+        }
+    }
+
+    private void OnEditorPointerReleasedLeft(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_leftButtonDownOnNode)
+        {
+            return;
+        }
+
+        if (e.GetCurrentPoint(NodeEditorControl).Properties.PointerUpdateKind
+            == PointerUpdateKind.LeftButtonReleased)
+        {
+            _leftButtonDownOnNode = false;
+            if (DataContext is MainWindowViewModel vm)
+            {
+                vm.EndNodeDrag();
+            }
         }
     }
 
@@ -419,6 +462,8 @@ public partial class MainWindow : Window
     {
         if (GetTabFromContextMenuItem(sender) is { } tab)
         {
+            _tabBeingRenamed = tab;
+            _tabRenameOldName = tab.Name;
             tab.IsEditing = true;
             FocusActiveTabRenameBox();
         }
@@ -488,14 +533,16 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Commits the inline tab rename when the editing TextBox loses focus.</summary>
-    private void OnTabTextBoxLostFocus(object? sender, RoutedEventArgs e){
+    private void OnTabTextBoxLostFocus(object? sender, RoutedEventArgs e)
+    {
         if (sender is TextBox { DataContext: TabViewModel tab })
         {
+            CommitTabRename(tab);
             tab.IsEditing = false;
         }
     }
 
-    /// <summary>Commits (Enter/Escape) the inline tab rename via keyboard.</summary>
+    /// <summary>Commits (Enter) or reverts (Escape) the inline tab rename via keyboard.</summary>
     private void OnTabTextBoxKeyDown(object? sender, KeyEventArgs e)
     {
         if (sender is not TextBox { DataContext: TabViewModel tab })
@@ -503,11 +550,52 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (e.Key is Key.Enter or Key.Escape)
+        if (e.Key == Key.Enter)
         {
+            CommitTabRename(tab);
             tab.IsEditing = false;
             e.Handled = true;
         }
+        else if (e.Key == Key.Escape)
+        {
+            // Revert to the name from before editing started.
+            if (_tabBeingRenamed == tab && _tabRenameOldName is not null)
+            {
+                tab.Name = _tabRenameOldName;
+            }
+
+            _tabBeingRenamed = null;
+            _tabRenameOldName = null;
+            tab.IsEditing = false;
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>Records the tab rename for undo/redo if the name actually changed and the tab was not just created.</summary>
+    private void CommitTabRename(TabViewModel tab)
+    {
+        if (_tabBeingRenamed != tab || _tabRenameOldName is null)
+        {
+            return;
+        }
+
+        var oldName = _tabRenameOldName;
+        _tabBeingRenamed = null;
+        _tabRenameOldName = null;
+
+        if (DataContext is not MainWindowViewModel vm)
+        {
+            return;
+        }
+
+        // Suppress recording the very first rename of a newly created tab — the AddTab
+        // undo action already covers removing the entire tab.
+        if (vm.NewlyCreatedTab == tab)
+        {
+            return;
+        }
+
+        vm.RecordTabRename(tab, oldName, tab.Name);
     }
 
     /// <inheritdoc/>
