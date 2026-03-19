@@ -1,0 +1,102 @@
+{
+  "name": "Math Computation Demo",
+  "version": "1.0.0",
+  "tabs": [
+    {
+      "title": "Arithmetic",
+      "nodes": [
+        {
+          "name": "Value A",
+          "type": "Number Producer",
+          "value": 42
+        },
+        {
+          "name": "Value B",
+          "type": "Number Producer",
+          "value": 8
+        },
+        {
+          "name": "Sum",
+          "type": "Arithmetic Transform",
+          "inputA": 0,
+          "inputB": 0,
+          "result": 0,
+          "operation": "Add"
+        },
+        {
+          "name": "Product",
+          "type": "Arithmetic Transform",
+          "inputA": 0,
+          "inputB": 0,
+          "result": 0,
+          "operation": "Multiply"
+        },
+        {
+          "name": "Sum Result",
+          "type": "Number Reporter",
+          "value": 0
+        },
+        {
+          "name": "Product Result",
+          "type": "Number Reporter",
+          "value": 0
+        }
+      ],
+      "layout": {
+        "Value A": {
+          "x": 80,
+          "y": 80
+        },
+        "Value B": {
+          "x": 80,
+          "y": 260
+        },
+        "Sum": {
+          "x": 380,
+          "y": 80
+        },
+        "Product": {
+          "x": 380,
+          "y": 280
+        },
+        "Sum Result": {
+          "x": 700,
+          "y": 100
+        },
+        "Product Result": {
+          "x": 700,
+          "y": 300
+        }
+      },
+      "connections": [
+        {
+          "from": "Value A.Output",
+          "to": "Sum.A"
+        },
+        {
+          "from": "Value B.Output",
+          "to": "Sum.B"
+        },
+        {
+          "from": "Value A.Output",
+          "to": "Product.A"
+        },
+        {
+          "from": "Value B.Output",
+          "to": "Product.B"
+        },
+        {
+          "from": "Product.Result",
+          "to": "Product Result.Input"
+        },
+        {
+          "from": "Sum.Result",
+          "to": "Sum Result.Input"
+        }
+      ]
+    }
+  ],
+  "nodes": [],
+  "layout": {},
+  "connections": []
+}
