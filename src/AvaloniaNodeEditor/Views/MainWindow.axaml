@@ -38,6 +38,9 @@
 
     <Window.KeyBindings>
         <KeyBinding Gesture="Ctrl+N" Command="{Binding NewGraphCommand}"/>
+        <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}"/>
+        <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}"/>
         <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyNodeCommand}"/>
         <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteNodeCommand}"/>
         <KeyBinding Gesture="Delete" Command="{Binding DeleteNodeCommand}"/>
@@ -90,6 +93,26 @@
 
                         <!-- Edit Group -->
                         <ribbon:RibbonGroupBox Header="Edit">
+                            <ribbon:RibbonButton Content="Undo"
+                                                 Command="{Binding UndoCommand}"
+                                                 ToolTip.Tip="Undo last action (Ctrl+Z)"
+                                                 AutomationProperties.Name="Undo">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="↩"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
+                            <ribbon:RibbonButton Content="Redo"
+                                                 Command="{Binding RedoCommand}"
+                                                 ToolTip.Tip="Redo last undone action (Ctrl+Y)"
+                                                 AutomationProperties.Name="Redo">
+                                <ribbon:RibbonButton.LargeIcon>
+                                    <TextBlock Text="↪"
+                                               FontFamily="{StaticResource NotoSymbolsFont}"
+                                               FontSize="24"/>
+                                </ribbon:RibbonButton.LargeIcon>
+                            </ribbon:RibbonButton>
                             <ribbon:RibbonButton Content="Copy"
                                                  Command="{Binding CopyNodeCommand}"
                                                  ToolTip.Tip="Copy selected node (Ctrl+C)"

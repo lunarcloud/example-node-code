@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text.Json;
 using Avalonia;
@@ -16,6 +17,31 @@ public partial class MainWindowViewModel : ViewModelBase
     // ── Fallback empty collections used when ActiveTab is transiently null ──
     private static readonly ObservableCollection<NodeViewModel> _fallbackNodes = [];
     private static readonly ObservableCollection<ConnectionViewModel> _fallbackConnections = [];
+
+    // ── Undo/redo infrastructure ───────────────────────────────────────────────
+    private readonly UndoRedoManager _undoRedoManager = new();
+
+    /// <summary>Whether there are actions available to undo.</summary>
+    public bool CanUndo => _undoRedoManager.CanUndo;
+
+    /// <summary>Whether there are actions available to redo.</summary>
+    public bool CanRedo => _undoRedoManager.CanRedo;
+
+    /// <summary>Undoes the most recent reversible action.</summary>
+    [RelayCommand(CanExecute = nameof(CanUndo))]
+    private void Undo() => _undoRedoManager.Undo();
+
+    /// <summary>Redoes the most recently undone action.</summary>
+    [RelayCommand(CanExecute = nameof(CanRedo))]
+    private void Redo() => _undoRedoManager.Redo();
+
+    // ── Node-rename tracking ───────────────────────────────────────────────────
+    /// <summary>
+    /// Maps each node to the name it had when the current rename session began.
+    /// Populated by the <see cref="PropertyChanging"/> subscription and committed when
+    /// the node is deselected (see <see cref="OnSelectedNodeChanged"/>).
+    /// </summary>
+    private readonly Dictionary<NodeViewModel, string> _nodeRenameOldNames = [];
 
     /// <summary>The ordered collection of tabs visible in the tab bar.</summary>
     public ObservableCollection<TabViewModel> Tabs { get; } = [];
@@ -81,57 +107,91 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>The node currently held in the in-memory clipboard for paste operations.</summary>
     private NodeViewModel? _clipboardNode;
 
-    /// <summary>Initialises the view model with a single default tab.</summary>
+    /// <summary>Initializes the view model with a single default tab.</summary>
     public MainWindowViewModel()
     {
         var defaultTab = new TabViewModel("Main");
         Tabs.Add(defaultTab);
         ActiveTab = defaultTab;
+
+        // Forward UndoRedoManager's CanUndo/CanRedo changes so command CanExecute re-evaluates.
+        _undoRedoManager.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(UndoRedoManager.CanUndo))
+            {
+                OnPropertyChanged(nameof(CanUndo));
+                UndoCommand.NotifyCanExecuteChanged();
+            }
+            else if (e.PropertyName == nameof(UndoRedoManager.CanRedo))
+            {
+                OnPropertyChanged(nameof(CanRedo));
+                RedoCommand.NotifyCanExecuteChanged();
+            }
+        };
     }
 
-    /// <summary>Notifies copy and delete commands when the selected node changes.</summary>
-    partial void OnSelectedNodeChanged(NodeViewModel? value)
+    /// <summary>Notifies copy and delete commands when the selected node changes.
+    /// Also commits any in-progress node rename when the selection moves away.</summary>
+    partial void OnSelectedNodeChanged(NodeViewModel? oldValue, NodeViewModel? newValue)
     {
+        CommitPendingRename(oldValue);
         CopyNodeCommand.NotifyCanExecuteChanged();
         DeleteNodeCommand.NotifyCanExecuteChanged();
     }
 
     // ── Tab management ────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Tracks the tab that was most recently created by an add-tab command so the view
+    /// can suppress recording the initial auto-rename as a separate undo action.
+    /// </summary>
+    internal TabViewModel? NewlyCreatedTab { get; private set; }
+
     /// <summary>Adds a new tab at the end of the tab bar, activates it, and starts inline rename.</summary>
     [RelayCommand]
     private void AddTab()
     {
+        var previousActive = ActiveTab;
         var tab = new TabViewModel(GenerateUniqueTabName());
+        var insertIndex = Tabs.Count;
         Tabs.Add(tab);
         ActiveTab = tab;
+        NewlyCreatedTab = tab;
         tab.IsEditing = true;
+        _undoRedoManager.Record(new AddTabAction(this, tab, insertIndex, previousActive));
     }
 
     /// <summary>Inserts a new tab immediately after <paramref name="targetTab"/>, activates it, and starts inline rename.</summary>
     [RelayCommand]
     private void AddTabAfter(TabViewModel? targetTab)
     {
+        var previousActive = ActiveTab;
         var tab = new TabViewModel(GenerateUniqueTabName());
+        int insertIndex;
         if (targetTab is not null)
         {
             var index = Tabs.IndexOf(targetTab);
             if (index >= 0)
             {
-                Tabs.Insert(index + 1, tab);
+                insertIndex = index + 1;
+                Tabs.Insert(insertIndex, tab);
             }
             else
             {
+                insertIndex = Tabs.Count;
                 Tabs.Add(tab);
             }
         }
         else
         {
+            insertIndex = Tabs.Count;
             Tabs.Add(tab);
         }
 
         ActiveTab = tab;
+        NewlyCreatedTab = tab;
         tab.IsEditing = true;
+        _undoRedoManager.Record(new AddTabAction(this, tab, insertIndex, previousActive));
     }
 
     /// <summary>Removes <paramref name="tab"/> from the tab bar.  The last remaining tab cannot be deleted.</summary>
@@ -144,12 +204,28 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         var index = Tabs.IndexOf(tab);
+        var wasActive = ActiveTab == tab;
         Tabs.Remove(tab);
 
-        if (ActiveTab == tab)
+        TabViewModel? activatedTab = null;
+        if (wasActive)
         {
-            ActiveTab = Tabs[Math.Min(index, Tabs.Count - 1)];
+            activatedTab = Tabs[Math.Min(index, Tabs.Count - 1)];
+            ActiveTab = activatedTab;
         }
+
+        _undoRedoManager.Record(new DeleteTabAction(this, tab, index, activatedTab));
+    }
+
+    /// <summary>Records a tab rename for undo/redo.  The view calls this after the user commits the rename.</summary>
+    internal void RecordTabRename(TabViewModel tab, string oldName, string newName)
+    {
+        if (oldName == newName)
+        {
+            return;
+        }
+
+        _undoRedoManager.Record(new RenameTabAction(tab, oldName, newName));
     }
 
     /// <summary>Generates a unique tab name of the form "Tab N".</summary>
@@ -199,8 +275,11 @@ public partial class MainWindowViewModel : ViewModelBase
         TrackNodeSelection(node);
         TrackNodeName(node);
 
+        var tab = ActiveTab!;
         Nodes.Add(node);
         SelectedNode = node;
+
+        _undoRedoManager.Record(new AddNodeAction(this, tab, node));
     }
 
     /// <summary>Called by the editor when the user finishes dragging a connection to a target connector.
@@ -247,9 +326,12 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        Connections.Add(new ConnectionViewModel(source, target));
+        var connection = new ConnectionViewModel(source, target);
+        Connections.Add(connection);
         source.IsConnected = true;
         target.IsConnected = true;
+
+        _undoRedoManager.Record(new AddConnectionAction(ActiveTab!, connection));
     }
 
     /// <summary>Removes a connection from the graph.</summary>
@@ -261,11 +343,14 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        var tab = ActiveTab!;
         Connections.Remove(conn);
 
         // Re-evaluate IsConnected for both endpoints
         UpdateIsConnected(conn.Source);
         UpdateIsConnected(conn.Target);
+
+        _undoRedoManager.Record(new RemoveConnectionAction(tab, conn));
     }
 
     /// <summary>Removes all connections attached to a given connector.</summary>
@@ -277,12 +362,18 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        var tab = ActiveTab!;
         var toRemove = Connections.Where(c => c.Source == conn || c.Target == conn).ToList();
         foreach (var connection in toRemove)
         {
             Connections.Remove(connection);
             UpdateIsConnected(connection.Source);
             UpdateIsConnected(connection.Target);
+        }
+
+        if (toRemove.Count > 0)
+        {
+            _undoRedoManager.Record(new DisconnectConnectorAction(tab, toRemove));
         }
     }
 
@@ -315,8 +406,12 @@ public partial class MainWindowViewModel : ViewModelBase
         node.Name = GenerateUniqueName(node.NodeType);
         TrackNodeSelection(node);
         TrackNodeName(node);
+
+        var tab = ActiveTab!;
         Nodes.Add(node);
         SelectedNode = node;
+
+        _undoRedoManager.Record(new AddNodeAction(this, tab, node));
     }
 
     private bool CanPasteNode() => _clipboardNode is not null;
@@ -330,7 +425,11 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        // Commit any in-progress rename before deleting the node.
+        CommitPendingRename(SelectedNode);
+
         var node = SelectedNode;
+        var tab = ActiveTab!;
         var toRemove = Connections
             .Where(c => node.Inputs.Contains(c.Target) || node.Outputs.Contains(c.Source))
             .ToList();
@@ -344,6 +443,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         Nodes.Remove(node);
         SelectedNode = null;
+
+        _undoRedoManager.Record(new DeleteNodeAction(this, tab, node, toRemove));
     }
 
     private bool CanDeleteNode() => SelectedNode is not null;
@@ -394,6 +495,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
         GraphName = string.Empty;
         GraphVersion = string.Empty;
+
+        // A new graph has no history.
+        _undoRedoManager.Clear();
+        _nodeRenameOldNames.Clear();
     }
 
     /// <summary>Quits the application.</summary>
@@ -528,6 +633,10 @@ public partial class MainWindowViewModel : ViewModelBase
             RestoreTabContent(tab, data.Nodes, data.Layout, data.Connections);
             ReplaceAllTabs([tab]);
         }
+
+        // A freshly loaded graph has no history.
+        _undoRedoManager.Clear();
+        _nodeRenameOldNames.Clear();
     }
 
     /// <summary>
@@ -614,9 +723,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
         return $"{nodeType} {index}";
     }
-
-    /// <summary>Validates all node names in the active tab for uniqueness and sets <see cref="NodeViewModel.HasNameError"/> accordingly.</summary>
-    internal void ValidateAllNodeNames() => ValidateNodeNamesInCollection(Nodes);
 
     /// <summary>Validates node names in <paramref name="nodes"/> for uniqueness.</summary>
     private static void ValidateNodeNamesInCollection(IEnumerable<NodeViewModel> nodes)
@@ -767,10 +873,22 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
-    /// <summary>Subscribes to <paramref name="node"/>'s PropertyChanged to revalidate
-    /// name uniqueness when the node name changes.</summary>
+    /// <summary>Subscribes to <paramref name="node"/>'s property events to:
+    /// <list type="bullet">
+    ///   <item>Capture the pre-edit name for undo via <see cref="PropertyChanging"/>.</item>
+    ///   <item>Revalidate name uniqueness via <see cref="PropertyChanged"/>.</item>
+    /// </list></summary>
     private void TrackNodeName(NodeViewModel node)
     {
+        node.PropertyChanging += (s, e) =>
+        {
+            if (e.PropertyName == nameof(NodeViewModel.Name))
+            {
+                // Capture the old name only once per rename session (first keystroke).
+                _nodeRenameOldNames.TryAdd(node, node.Name);
+            }
+        };
+
         node.PropertyChanged += (s, e) =>
         {
             if (e.PropertyName == nameof(NodeViewModel.Name))
@@ -779,6 +897,88 @@ public partial class MainWindowViewModel : ViewModelBase
             }
         };
     }
+
+    /// <summary>
+    /// If <paramref name="node"/> has an uncommitted rename, records a <see cref="RenameNodeAction"/>
+    /// on the undo stack (if the name actually changed) and clears the tracked old name.
+    /// </summary>
+    private void CommitPendingRename(NodeViewModel? node)
+    {
+        if (node is null)
+        {
+            return;
+        }
+
+        if (!_nodeRenameOldNames.Remove(node, out var oldName))
+        {
+            return;
+        }
+
+        if (oldName != node.Name)
+        {
+            _undoRedoManager.Record(new RenameNodeAction(this, node, oldName, node.Name));
+        }
+    }
+
+    // ── Node-drag tracking ────────────────────────────────────────────────────
+
+    /// <summary>Saved node locations captured at the start of a drag gesture.</summary>
+    private Dictionary<NodeViewModel, Point>? _preDragLocations;
+
+    /// <summary>
+    /// Called by the view when a left-button press on a node (or the canvas) starts a potential drag.
+    /// Saves the current location of every node in the active tab so a move can be undone.
+    /// </summary>
+    internal void BeginNodeDrag()
+    {
+        if (ActiveTab is null)
+        {
+            return;
+        }
+
+        _preDragLocations = ActiveTab.Nodes.ToDictionary(n => n, n => n.Location);
+    }
+
+    /// <summary>
+    /// Called by the view when the left button is released after a potential drag.
+    /// Compares current node positions against the saved pre-drag positions; if any node
+    /// moved, records a <see cref="MoveNodesAction"/> on the undo stack.
+    /// </summary>
+    internal void EndNodeDrag()
+    {
+        if (_preDragLocations is null)
+        {
+            return;
+        }
+
+        var moves = new List<(NodeViewModel Node, Point OldLocation, Point NewLocation)>();
+
+        if (ActiveTab is not null)
+        {
+            foreach (var node in ActiveTab.Nodes)
+            {
+                if (_preDragLocations.TryGetValue(node, out var oldPos) && oldPos != node.Location)
+                {
+                    moves.Add((node, oldPos, node.Location));
+                }
+            }
+        }
+
+        _preDragLocations = null;
+
+        if (moves.Count > 0)
+        {
+            _undoRedoManager.Record(new MoveNodesAction(moves));
+        }
+    }
+
+    // ── Validation helpers ────────────────────────────────────────────────────
+
+    /// <summary>Validates all node names in the active tab for uniqueness.</summary>
+    internal void ValidateAllNodeNames() => ValidateNodeNamesInCollection(Nodes);
+
+    /// <summary>Validates node names in <paramref name="tab"/> for uniqueness.</summary>
+    internal void ValidateNodeNamesInTab(TabViewModel tab) => ValidateNodeNamesInCollection(tab.Nodes);
 
     private void UpdateIsConnected(ConnectorViewModel connector)
     {
