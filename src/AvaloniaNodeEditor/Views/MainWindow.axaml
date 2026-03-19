@@ -626,18 +626,6 @@
                                         <TextBox x:Name="NodeNameTextBox"
                                                  Text="{Binding PairLabel, Mode=TwoWay}"
                                                  ToolTip.Tip="Shared display name shown on both paired nodes"/>
-                                        <TextBlock Text="Internal name"/>
-                                        <TextBox Text="{Binding Name}"
-                                                 IsReadOnly="True"
-                                                 Classes.nameError="{Binding HasNameError}"
-                                                 ToolTip.Tip="Unique internal identifier (used in connections and serialization)"/>
-                                        <TextBlock Text="Duplicate node name"
-                                                   IsVisible="{Binding HasNameError}"
-                                                   Foreground="Red" FontSize="11"/>
-                                        <Separator Margin="0,4"/>
-                                        <TextBlock Text="Paired with:" FontWeight="SemiBold"/>
-                                        <TextBlock Text="{Binding Pair.Name, FallbackValue='(no pair)'}"
-                                                   Opacity="0.7"/>
                                         <Separator Margin="0,4"/>
                                         <TextBlock Text="Connectors:" FontWeight="SemiBold"/>
                                         <ItemsControl ItemsSource="{Binding ConnectorSlots}">

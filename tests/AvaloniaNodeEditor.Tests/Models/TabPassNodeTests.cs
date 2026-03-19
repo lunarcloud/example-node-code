@@ -237,7 +237,7 @@ public class TabPassNodeTests
         Assert.Equal("Safe Rename", node2.ConnectorSlots[0].Name);
     }
 
-    // ── PairLabel / DisplayName tests ─────────────────────────────────────────
+    // ── PairLabel / DisplayName / PairIndex tests ─────────────────────────────────────────
 
     [Fact]
     public void DisplayName_WhenPairLabelEmpty_ReturnsFallbackName()
@@ -256,10 +256,26 @@ public class TabPassNodeTests
     }
 
     [Fact]
+    public void PairLabel_AutoSetsNameWithPairIndex()
+    {
+        var node = new TabPassNode { PairIndex = 1 };
+        node.PairLabel = "My Signal";
+        Assert.Equal("My Signal.1", node.Name);
+    }
+
+    [Fact]
+    public void PairLabel_AutoSetsNameWithPairIndex2()
+    {
+        var node = new TabPassNode { PairIndex = 2 };
+        node.PairLabel = "My Signal";
+        Assert.Equal("My Signal.2", node.Name);
+    }
+
+    [Fact]
     public void PairLabel_SyncsToPairedNode()
     {
-        var node1 = new TabPassNode();
-        var node2 = new TabPassNode();
+        var node1 = new TabPassNode { PairIndex = 1 };
+        var node2 = new TabPassNode { PairIndex = 2 };
         node1.Pair = node2;
         node2.Pair = node1;
 
@@ -269,10 +285,24 @@ public class TabPassNodeTests
     }
 
     [Fact]
+    public void PairLabel_SyncsNamesOnBothNodesWithCorrectIndex()
+    {
+        var node1 = new TabPassNode { PairIndex = 1 };
+        var node2 = new TabPassNode { PairIndex = 2 };
+        node1.Pair = node2;
+        node2.Pair = node1;
+
+        node1.PairLabel = "Signal";
+
+        Assert.Equal("Signal.1", node1.Name);
+        Assert.Equal("Signal.2", node2.Name);
+    }
+
+    [Fact]
     public void PairLabel_SyncsToPairedNodeInReverse()
     {
-        var node1 = new TabPassNode();
-        var node2 = new TabPassNode();
+        var node1 = new TabPassNode { PairIndex = 1 };
+        var node2 = new TabPassNode { PairIndex = 2 };
         node1.Pair = node2;
         node2.Pair = node1;
 
@@ -284,8 +314,8 @@ public class TabPassNodeTests
     [Fact]
     public void PairLabel_DoesNotCauseInfiniteRecursion()
     {
-        var node1 = new TabPassNode();
-        var node2 = new TabPassNode();
+        var node1 = new TabPassNode { PairIndex = 1 };
+        var node2 = new TabPassNode { PairIndex = 2 };
         node1.Pair = node2;
         node2.Pair = node1;
 
@@ -299,8 +329,8 @@ public class TabPassNodeTests
     [Fact]
     public void PairLabel_SyncUpdatesDisplayNameOnBothNodes()
     {
-        var node1 = new TabPassNode();
-        var node2 = new TabPassNode();
+        var node1 = new TabPassNode { PairIndex = 1 };
+        var node2 = new TabPassNode { PairIndex = 2 };
         node1.Pair = node2;
         node2.Pair = node1;
 
@@ -308,5 +338,17 @@ public class TabPassNodeTests
 
         Assert.Equal("Shared Label", node1.DisplayName);
         Assert.Equal("Shared Label", node2.DisplayName);
+    }
+
+    [Fact]
+    public void PairLabel_ClearReverts_NameToFallback()
+    {
+        var node = new TabPassNode { PairIndex = 1 };
+        node.PairLabel = "My Signal";
+        Assert.Equal("My Signal.1", node.Name);
+
+        node.PairLabel = string.Empty;
+
+        Assert.Equal("Tab Pass 1", node.Name);
     }
 }

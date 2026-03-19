@@ -295,23 +295,22 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         var pairId = Guid.NewGuid();
 
-        var node1 = new TabPassNode { Location = canvasPosition, PairId = pairId };
-        node1.Name = GenerateUniqueName("Tab Pass");
-
+        var node1 = new TabPassNode { Location = canvasPosition, PairId = pairId, PairIndex = 1 };
         var node2 = new TabPassNode
         {
             Location = new Point(canvasPosition.X + 220, canvasPosition.Y),
             PairId = pairId,
+            PairIndex = 2,
         };
-        node2.Name = GenerateUniqueName("Tab Pass");
 
-        // Link the pair before adding slots so the sync fires correctly.
+        // Link the pair before setting PairLabel so the name-sync fires on both nodes.
         node1.Pair = node2;
         node2.Pair = node1;
 
-        // Give both nodes the same shared display label (pair label).
-        // Setting it on node1 propagates to node2 automatically via OnPairLabelChanged.
-        node1.PairLabel = node1.Name;
+        // Setting PairLabel on node1 propagates to node2 and auto-sets Name on both nodes
+        // to "{PairLabel}.1" and "{PairLabel}.2" respectively.
+        var baseLabel = GenerateUniquePairLabel("Tab Pass");
+        node1.PairLabel = baseLabel;
 
         // Add default slots: node1 gets an input and an output; node2 receives the mirrors.
         node1.AddConnectorSlot("In 1", isInput: true);
@@ -654,6 +653,8 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>
     /// Creates a standalone (unpaired) copy of a <see cref="TabPassNode"/> at <paramref name="position"/>.
     /// The clone receives a fresh <see cref="TabPassNode.PairId"/> and has no <see cref="TabPassNode.Pair"/> link.
+    /// <see cref="TabPassNode.PairLabel"/> is intentionally not copied so the clone does not produce a
+    /// name collision with the source node.
     /// </summary>
     private static TabPassNode CloneTabPassNode(TabPassNode source, Point position)
     {
@@ -757,6 +758,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 case TabPassNode tp:
                     nodeData.PairId = tp.PairId.ToString();
                     nodeData.PairLabel = string.IsNullOrEmpty(tp.PairLabel) ? null : tp.PairLabel;
+                    nodeData.PairIndex = tp.PairIndex;
                     nodeData.Slots = tp.ConnectorSlots
                         .Select(s => new SlotData { Name = s.Name, IsInput = s.IsInput })
                         .ToList();
@@ -920,6 +922,22 @@ public partial class MainWindowViewModel : ViewModelBase
         return $"{nodeType} {index}";
     }
 
+    /// <summary>
+    /// Generates a unique pair label for a Tab-Pass pair so that neither
+    /// <c>{label}.1</c> nor <c>{label}.2</c> conflicts with an existing node name across all tabs.
+    /// </summary>
+    private string GenerateUniquePairLabel(string nodeType)
+    {
+        var allNames = Tabs.SelectMany(t => t.Nodes).Select(n => n.Name).ToHashSet();
+        int index = 1;
+        while (allNames.Contains($"{nodeType} {index}.1") || allNames.Contains($"{nodeType} {index}.2"))
+        {
+            index++;
+        }
+
+        return $"{nodeType} {index}";
+    }
+
     /// <summary>Validates node names in <paramref name="nodes"/> for uniqueness.</summary>
     private static void ValidateNodeNamesInCollection(IEnumerable<NodeViewModel> nodes)
     {
@@ -998,6 +1016,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (Guid.TryParse(data.PairId, out var pairId))
             node.PairId = pairId;
+
+        if (data.PairIndex > 0)
+            node.PairIndex = data.PairIndex;
 
         if (!string.IsNullOrEmpty(data.PairLabel))
             node.PairLabel = data.PairLabel;

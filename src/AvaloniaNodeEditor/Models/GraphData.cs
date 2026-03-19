@@ -122,6 +122,10 @@ public class NodeData
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? PairLabel { get; set; }
 
+    /// <summary>The 1-based index of this node within its Tab Pass pair (1 or 2).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int PairIndex { get; set; }
+
     /// <summary>Connector slot definitions for Tab Pass nodes.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<SlotData>? Slots { get; set; }

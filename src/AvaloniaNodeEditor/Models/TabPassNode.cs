@@ -20,7 +20,8 @@ public partial class TabPassNode : NodeViewModel
     /// <summary>
     /// The shared display label shown in the node header on the canvas.
     /// Both nodes of the pair share the same <see cref="PairLabel"/>; changes propagate to the sibling.
-    /// The underlying unique <see cref="NodeViewModel.Name"/> is kept as an internal identifier.
+    /// Changing <see cref="PairLabel"/> also auto-updates the underlying <see cref="NodeViewModel.Name"/>
+    /// to <c>{PairLabel}.{PairIndex}</c> on both nodes.
     /// </summary>
     [ObservableProperty]
     private string _pairLabel = string.Empty;
@@ -28,13 +29,26 @@ public partial class TabPassNode : NodeViewModel
     /// <inheritdoc />
     public override string DisplayName => string.IsNullOrEmpty(PairLabel) ? Name : PairLabel;
 
+    /// <summary>
+    /// The 1-based index of this node within the pair (1 or 2).
+    /// Used to generate the unique internal <see cref="NodeViewModel.Name"/> as
+    /// <c>{PairLabel}.{PairIndex}</c> when <see cref="PairLabel"/> changes.
+    /// </summary>
+    public int PairIndex { get; set; } = 1;
+
     /// <summary>Prevents recursive label sync when the paired node's label is being updated.</summary>
     private bool _isSyncingPairLabel;
 
-    /// <summary>Called whenever <see cref="PairLabel"/> changes; propagates to the sibling node.</summary>
+    /// <summary>Called whenever <see cref="PairLabel"/> changes; propagates to the sibling and updates both nodes' names.</summary>
     partial void OnPairLabelChanged(string value)
     {
         OnPropertyChanged(nameof(DisplayName));
+
+        // Auto-set this node's internal Name to "{PairLabel}.{PairIndex}".
+        // When PairLabel is cleared, revert to the generic "Tab Pass {PairIndex}" fallback.
+        Name = string.IsNullOrEmpty(value)
+            ? $"Tab Pass {PairIndex}"
+            : $"{value}.{PairIndex}";
 
         if (_isSyncingPairLabel || Pair is null || Pair.PairLabel == value)
             return;
