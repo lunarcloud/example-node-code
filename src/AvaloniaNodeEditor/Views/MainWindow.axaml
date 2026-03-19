@@ -640,9 +640,11 @@
                                                 <DataTemplate x:CompileBindings="False">
                                                     <Grid ColumnDefinitions="*,Auto,Auto"
                                                           Margin="0,2">
-                                                        <TextBlock Grid.Column="0"
-                                                                   Text="{Binding Name}"
-                                                                   VerticalAlignment="Center"/>
+                                                        <TextBox Grid.Column="0"
+                                                                 Text="{Binding Name, Mode=TwoWay}"
+                                                                 VerticalAlignment="Center"
+                                                                 Padding="4,2"
+                                                                 ToolTip.Tip="Edit the connector slot name"/>
                                                         <TextBlock Grid.Column="1"
                                                                    Text="{Binding DirectionLabel}"
                                                                    Opacity="0.6"

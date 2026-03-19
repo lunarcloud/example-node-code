@@ -177,4 +177,63 @@ public class TabPassNodeTests
         var slot = new TabPassConnectorSlot { Name = "Out 1", IsInput = false };
         Assert.Equal("Output", slot.DirectionLabel);
     }
+
+    [Fact]
+    public void RenameSlot_UpdatesConnectorViewModelOnSameNode()
+    {
+        var node = new TabPassNode();
+        node.AddConnectorSlotInternal("In 1", isInput: true);
+
+        node.ConnectorSlots[0].Name = "My Signal";
+
+        Assert.Equal("My Signal", node.Inputs[0].Name);
+    }
+
+    [Fact]
+    public void RenameSlot_SyncsNameToPairedNode()
+    {
+        var node1 = new TabPassNode();
+        var node2 = new TabPassNode();
+        node1.Pair = node2;
+        node2.Pair = node1;
+        node1.AddConnectorSlot("In 1", isInput: true);
+
+        // Rename the input slot on node1
+        node1.ConnectorSlots[0].Name = "Renamed";
+
+        // node2's mirrored output slot should also be renamed
+        Assert.Equal("Renamed", node2.ConnectorSlots[0].Name);
+    }
+
+    [Fact]
+    public void RenameSlot_SyncsConnectorViewModelOnPairedNode()
+    {
+        var node1 = new TabPassNode();
+        var node2 = new TabPassNode();
+        node1.Pair = node2;
+        node2.Pair = node1;
+        node1.AddConnectorSlot("Out 1", isInput: false);
+
+        // Rename the output slot on node1
+        node1.ConnectorSlots[0].Name = "Data Out";
+
+        // node2's mirrored input ConnectorViewModel should also be renamed
+        Assert.Equal("Data Out", node2.Inputs[0].Name);
+    }
+
+    [Fact]
+    public void RenameSlot_DoesNotCauseInfiniteRecursion()
+    {
+        var node1 = new TabPassNode();
+        var node2 = new TabPassNode();
+        node1.Pair = node2;
+        node2.Pair = node1;
+        node1.AddConnectorSlot("In 1", isInput: true);
+
+        // This should complete without a StackOverflowException
+        node1.ConnectorSlots[0].Name = "Safe Rename";
+
+        Assert.Equal("Safe Rename", node1.ConnectorSlots[0].Name);
+        Assert.Equal("Safe Rename", node2.ConnectorSlots[0].Name);
+    }
 }

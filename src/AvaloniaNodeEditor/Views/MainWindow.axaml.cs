@@ -149,6 +149,17 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Right-click: eagerly set SelectedNode from the visual tree so the context-menu
+        // click handlers can execute commands that require a selected node.
+        if (props.IsRightButtonPressed && DataContext is MainWindowViewModel rightVm)
+        {
+            var nodeVm = GetNodeViewModelFromSource(e.Source);
+            if (nodeVm is not null)
+                rightVm.SelectedNode = nodeVm;
+            // Do NOT mark as handled — the event must still reach the ContextMenu.
+            return;
+        }
+
         // Block left-button panning on empty canvas.
         // Allow: clicks on nodes/connectors/connections (they handle their own interaction),
         //        Shift+left (selection rectangle), Alt+left (connection removal).
@@ -170,6 +181,24 @@ public partial class MainWindow : Window
                 e.Handled = true;
             }
         }
+    }
+
+    /// <summary>
+    /// Walks the visual tree from <paramref name="source"/> upward looking for a
+    /// <see cref="BaseNode"/> whose DataContext is a <see cref="NodeViewModel"/>.
+    /// Returns the <see cref="NodeViewModel"/> if found, <c>null</c> otherwise.
+    /// </summary>
+    private static NodeViewModel? GetNodeViewModelFromSource(object? source)
+    {
+        var visual = source as Visual;
+        while (visual is not null)
+        {
+            if (visual is BaseNode nodeControl && nodeControl.DataContext is NodeViewModel nodeVm)
+                return nodeVm;
+            visual = visual.GetVisualParent() as Visual;
+        }
+
+        return null;
     }
 
     private void OnEditorPointerMovedMiddle(object? sender, PointerEventArgs e)

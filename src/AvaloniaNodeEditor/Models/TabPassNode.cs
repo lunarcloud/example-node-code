@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using AvaloniaNodeEditor.ViewModels;
@@ -24,6 +25,12 @@ public partial class TabPassNode : NodeViewModel
     /// <summary>The ordered list of connector slot definitions for this node.</summary>
     public ObservableCollection<TabPassConnectorSlot> ConnectorSlots { get; } = [];
 
+    /// <summary>Tracks old slot names captured by PropertyChanging, keyed by slot instance.</summary>
+    private readonly Dictionary<TabPassConnectorSlot, string> _pendingSlotRenames = [];
+
+    /// <summary>Prevents recursive sync when this node's slots are being updated by the pair.</summary>
+    private bool _isSyncingSlotName;
+
     /// <summary>Initializes a new instance of <see cref="TabPassNode"/> with no connector slots.</summary>
     public TabPassNode()
     {
@@ -46,11 +53,75 @@ public partial class TabPassNode : NodeViewModel
     internal void AddConnectorSlotInternal(string name, bool isInput)
     {
         var slot = new TabPassConnectorSlot { Name = name, IsInput = isInput };
+
+        // Subscribe to name changes so the slot label and the paired node stay in sync.
+        slot.PropertyChanging += OnSlotPropertyChanging;
+        slot.PropertyChanged += OnSlotPropertyChanged;
+
         ConnectorSlots.Add(slot);
         if (isInput)
             Inputs.Add(new ConnectorViewModel { Name = name });
         else
             Outputs.Add(new ConnectorViewModel { Name = name });
+    }
+
+    private void OnSlotPropertyChanging(object? sender, System.ComponentModel.PropertyChangingEventArgs e)
+    {
+        if (e.PropertyName == nameof(TabPassConnectorSlot.Name) && sender is TabPassConnectorSlot slot)
+            _pendingSlotRenames.TryAdd(slot, slot.Name);
+    }
+
+    private void OnSlotPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TabPassConnectorSlot.Name) && sender is TabPassConnectorSlot slot)
+            SyncSlotNameChange(slot);
+    }
+
+    /// <summary>
+    /// Propagates a slot name change to the matching <see cref="ConnectorViewModel"/> on this node
+    /// and to the mirrored slot (and its connector) on the <see cref="Pair"/>.
+    /// </summary>
+    private void SyncSlotNameChange(TabPassConnectorSlot changedSlot)
+    {
+        // Always consume the pending rename entry even when suppressing recursive sync.
+        if (!_pendingSlotRenames.Remove(changedSlot, out var oldName))
+            return;
+
+        if (_isSyncingSlotName)
+            return;
+
+        if (oldName == changedSlot.Name)
+            return;
+
+        var newName = changedSlot.Name;
+
+        // Update the ConnectorViewModel label on this node.
+        var ownConnectors = changedSlot.IsInput ? Inputs : Outputs;
+        var ownConnector = ownConnectors.FirstOrDefault(c => c.Name == oldName);
+        if (ownConnector is not null)
+            ownConnector.Name = newName;
+
+        // Propagate to the paired node (mirrored direction, same name).
+        if (Pair is not null)
+        {
+            Pair._isSyncingSlotName = true;
+            try
+            {
+                var pairSlot = Pair.ConnectorSlots.FirstOrDefault(
+                    s => s.Name == oldName && s.IsInput != changedSlot.IsInput);
+                if (pairSlot is not null)
+                    pairSlot.Name = newName;
+
+                var pairConnectors = changedSlot.IsInput ? Pair.Outputs : Pair.Inputs;
+                var pairConnector = pairConnectors.FirstOrDefault(c => c.Name == oldName);
+                if (pairConnector is not null)
+                    pairConnector.Name = newName;
+            }
+            finally
+            {
+                Pair._isSyncingSlotName = false;
+            }
+        }
     }
 
     /// <summary>
@@ -73,7 +144,12 @@ public partial class TabPassNode : NodeViewModel
     {
         var slot = ConnectorSlots.FirstOrDefault(s => s.Name == name && s.IsInput == isInput);
         if (slot is not null)
+        {
+            slot.PropertyChanging -= OnSlotPropertyChanging;
+            slot.PropertyChanged -= OnSlotPropertyChanged;
+            _pendingSlotRenames.Remove(slot);
             ConnectorSlots.Remove(slot);
+        }
 
         if (isInput)
         {
@@ -115,3 +191,4 @@ public partial class TabPassNode : NodeViewModel
         return $"Out {index}";
     }
 }
+
