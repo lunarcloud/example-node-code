@@ -236,4 +236,77 @@ public class TabPassNodeTests
         Assert.Equal("Safe Rename", node1.ConnectorSlots[0].Name);
         Assert.Equal("Safe Rename", node2.ConnectorSlots[0].Name);
     }
+
+    // ── PairLabel / DisplayName tests ─────────────────────────────────────────
+
+    [Fact]
+    public void DisplayName_WhenPairLabelEmpty_ReturnsFallbackName()
+    {
+        var node = new TabPassNode();
+        node.Name = "Tab Pass 1";
+        Assert.Equal("Tab Pass 1", node.DisplayName);
+    }
+
+    [Fact]
+    public void DisplayName_WhenPairLabelSet_ReturnsPairLabel()
+    {
+        var node = new TabPassNode();
+        node.PairLabel = "My Signal";
+        Assert.Equal("My Signal", node.DisplayName);
+    }
+
+    [Fact]
+    public void PairLabel_SyncsToPairedNode()
+    {
+        var node1 = new TabPassNode();
+        var node2 = new TabPassNode();
+        node1.Pair = node2;
+        node2.Pair = node1;
+
+        node1.PairLabel = "My Signal";
+
+        Assert.Equal("My Signal", node2.PairLabel);
+    }
+
+    [Fact]
+    public void PairLabel_SyncsToPairedNodeInReverse()
+    {
+        var node1 = new TabPassNode();
+        var node2 = new TabPassNode();
+        node1.Pair = node2;
+        node2.Pair = node1;
+
+        node2.PairLabel = "From Pair 2";
+
+        Assert.Equal("From Pair 2", node1.PairLabel);
+    }
+
+    [Fact]
+    public void PairLabel_DoesNotCauseInfiniteRecursion()
+    {
+        var node1 = new TabPassNode();
+        var node2 = new TabPassNode();
+        node1.Pair = node2;
+        node2.Pair = node1;
+
+        // Renaming from node1 should not stack-overflow.
+        node1.PairLabel = "Stable";
+
+        Assert.Equal("Stable", node1.PairLabel);
+        Assert.Equal("Stable", node2.PairLabel);
+    }
+
+    [Fact]
+    public void PairLabel_SyncUpdatesDisplayNameOnBothNodes()
+    {
+        var node1 = new TabPassNode();
+        var node2 = new TabPassNode();
+        node1.Pair = node2;
+        node2.Pair = node1;
+
+        node1.PairLabel = "Shared Label";
+
+        Assert.Equal("Shared Label", node1.DisplayName);
+        Assert.Equal("Shared Label", node2.DisplayName);
+    }
 }

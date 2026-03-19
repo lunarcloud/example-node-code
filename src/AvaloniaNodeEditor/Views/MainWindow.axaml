@@ -409,7 +409,7 @@
                 <!-- Template for each node on the canvas -->
                 <nodify:NodifyEditor.ItemTemplate>
                     <DataTemplate>
-                        <nodify:Node Header="{Binding Name}"
+                        <nodify:Node Header="{Binding DisplayName}"
                                      Location="{Binding Location, Mode=TwoWay}"
                                      IsSelected="{Binding IsSelected, Mode=TwoWay}"
                                      Input="{Binding Inputs}"
@@ -622,10 +622,15 @@
                                 <DataTemplate DataType="models:TabPassNode" x:CompileBindings="False">
                                     <StackPanel Margin="8,4" Spacing="6">
                                         <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
-                                        <TextBlock Text="Name"/>
+                                        <TextBlock Text="Pair Name"/>
                                         <TextBox x:Name="NodeNameTextBox"
-                                                 Text="{Binding Name}"
-                                                 Classes.nameError="{Binding HasNameError}"/>
+                                                 Text="{Binding PairLabel, Mode=TwoWay}"
+                                                 ToolTip.Tip="Shared display name shown on both paired nodes"/>
+                                        <TextBlock Text="Internal name"/>
+                                        <TextBox Text="{Binding Name}"
+                                                 IsReadOnly="True"
+                                                 Classes.nameError="{Binding HasNameError}"
+                                                 ToolTip.Tip="Unique internal identifier (used in connections and serialization)"/>
                                         <TextBlock Text="Duplicate node name"
                                                    IsVisible="{Binding HasNameError}"
                                                    Foreground="Red" FontSize="11"/>

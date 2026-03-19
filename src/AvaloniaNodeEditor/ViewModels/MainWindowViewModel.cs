@@ -309,6 +309,10 @@ public partial class MainWindowViewModel : ViewModelBase
         node1.Pair = node2;
         node2.Pair = node1;
 
+        // Give both nodes the same shared display label (pair label).
+        // Setting it on node1 propagates to node2 automatically via OnPairLabelChanged.
+        node1.PairLabel = node1.Name;
+
         // Add default slots: node1 gets an input and an output; node2 receives the mirrors.
         node1.AddConnectorSlot("In 1", isInput: true);
         node1.AddConnectorSlot("Out 1", isInput: false);
@@ -752,6 +756,7 @@ public partial class MainWindowViewModel : ViewModelBase
                     break;
                 case TabPassNode tp:
                     nodeData.PairId = tp.PairId.ToString();
+                    nodeData.PairLabel = string.IsNullOrEmpty(tp.PairLabel) ? null : tp.PairLabel;
                     nodeData.Slots = tp.ConnectorSlots
                         .Select(s => new SlotData { Name = s.Name, IsInput = s.IsInput })
                         .ToList();
@@ -993,6 +998,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (Guid.TryParse(data.PairId, out var pairId))
             node.PairId = pairId;
+
+        if (!string.IsNullOrEmpty(data.PairLabel))
+            node.PairLabel = data.PairLabel;
 
         if (data.Slots is not null)
         {

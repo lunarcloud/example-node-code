@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using AvaloniaNodeEditor.ViewModels;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace AvaloniaNodeEditor.Models;
 
@@ -15,6 +16,39 @@ public partial class TabPassNode : NodeViewModel
 {
     /// <inheritdoc />
     public override string NodeType => "Tab Pass";
+
+    /// <summary>
+    /// The shared display label shown in the node header on the canvas.
+    /// Both nodes of the pair share the same <see cref="PairLabel"/>; changes propagate to the sibling.
+    /// The underlying unique <see cref="NodeViewModel.Name"/> is kept as an internal identifier.
+    /// </summary>
+    [ObservableProperty]
+    private string _pairLabel = string.Empty;
+
+    /// <inheritdoc />
+    public override string DisplayName => string.IsNullOrEmpty(PairLabel) ? Name : PairLabel;
+
+    /// <summary>Prevents recursive label sync when the paired node's label is being updated.</summary>
+    private bool _isSyncingPairLabel;
+
+    /// <summary>Called whenever <see cref="PairLabel"/> changes; propagates to the sibling node.</summary>
+    partial void OnPairLabelChanged(string value)
+    {
+        OnPropertyChanged(nameof(DisplayName));
+
+        if (_isSyncingPairLabel || Pair is null || Pair.PairLabel == value)
+            return;
+
+        Pair._isSyncingPairLabel = true;
+        try
+        {
+            Pair.PairLabel = value;
+        }
+        finally
+        {
+            Pair._isSyncingPairLabel = false;
+        }
+    }
 
     /// <summary>The pair identifier shared by this node and its sibling. Persisted to JSON.</summary>
     public Guid PairId { get; set; } = Guid.NewGuid();

@@ -118,6 +118,10 @@ public class NodeData
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? PairId { get; set; }
 
+    /// <summary>The shared display label for Tab Pass node pairs.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PairLabel { get; set; }
+
     /// <summary>Connector slot definitions for Tab Pass nodes.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<SlotData>? Slots { get; set; }
