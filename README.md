@@ -9,6 +9,14 @@ A cross-platform node editor application built with Avalonia UI and NodeEditorAv
 - **Modern UI**: Built with Avalonia 11.3.11 and Fluent theme
 - **.NET 10**: Built on the latest .NET 10.0 framework
 
+## Screenshots
+
+![example math computation](examples/math-computation.jpg)
+
+![example signal processing, page 1](examples/signal-processing-page-1.jpg)
+
+![example signal processing, page 2](examples/signal-processing-page-2.jpg)
+
 ## Building
 
 ### Prerequisites
