@@ -13,11 +13,44 @@ namespace AvaloniaNodeEditor.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    /// <summary>The collection of nodes displayed in the editor canvas.</summary>
-    public ObservableCollection<NodeViewModel> Nodes { get; } = [];
+    // ── Fallback empty collections used when ActiveTab is transiently null ──
+    private static readonly ObservableCollection<NodeViewModel> _fallbackNodes = [];
+    private static readonly ObservableCollection<ConnectionViewModel> _fallbackConnections = [];
 
-    /// <summary>The collection of connections between node connectors.</summary>
-    public ObservableCollection<ConnectionViewModel> Connections { get; } = [];
+    /// <summary>The ordered collection of tabs visible in the tab bar.</summary>
+    public ObservableCollection<TabViewModel> Tabs { get; } = [];
+
+    /// <summary>The currently active tab whose nodes and connections are shown in the editor.</summary>
+    [ObservableProperty]
+    private TabViewModel? _activeTab;
+
+    /// <summary>
+    /// The nodes displayed in the editor canvas — delegates to the active tab's node collection.
+    /// Raises <see cref="System.ComponentModel.INotifyPropertyChanged.PropertyChanged"/> when
+    /// <see cref="ActiveTab"/> changes.
+    /// </summary>
+    public ObservableCollection<NodeViewModel> Nodes => ActiveTab?.Nodes ?? _fallbackNodes;
+
+    /// <summary>
+    /// The connections between node connectors — delegates to the active tab's connection collection.
+    /// Raises <see cref="System.ComponentModel.INotifyPropertyChanged.PropertyChanged"/> when
+    /// <see cref="ActiveTab"/> changes.
+    /// </summary>
+    public ObservableCollection<ConnectionViewModel> Connections => ActiveTab?.Connections ?? _fallbackConnections;
+
+    /// <summary>Called by the toolkit whenever <see cref="ActiveTab"/> changes.</summary>
+    partial void OnActiveTabChanged(TabViewModel? oldValue, TabViewModel? newValue)
+    {
+        // Clear selection when switching tabs so the properties panel does not show stale data.
+        SelectedNode = null;
+
+        // Notify bindings that the Nodes and Connections references have changed.
+        OnPropertyChanged(nameof(Nodes));
+        OnPropertyChanged(nameof(Connections));
+
+        CopyNodeCommand.NotifyCanExecuteChanged();
+        DeleteNodeCommand.NotifyCanExecuteChanged();
+    }
 
     /// <summary>The currently selected node, shown in the properties panel.</summary>
     [ObservableProperty]
@@ -48,11 +81,87 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>The node currently held in the in-memory clipboard for paste operations.</summary>
     private NodeViewModel? _clipboardNode;
 
+    /// <summary>Initialises the view model with a single default tab.</summary>
+    public MainWindowViewModel()
+    {
+        var defaultTab = new TabViewModel("Main");
+        Tabs.Add(defaultTab);
+        ActiveTab = defaultTab;
+    }
+
     /// <summary>Notifies copy and delete commands when the selected node changes.</summary>
     partial void OnSelectedNodeChanged(NodeViewModel? value)
     {
         CopyNodeCommand.NotifyCanExecuteChanged();
         DeleteNodeCommand.NotifyCanExecuteChanged();
+    }
+
+    // ── Tab management ────────────────────────────────────────────────────────
+
+    /// <summary>Adds a new tab at the end of the tab bar, activates it, and starts inline rename.</summary>
+    [RelayCommand]
+    private void AddTab()
+    {
+        var tab = new TabViewModel(GenerateUniqueTabName());
+        Tabs.Add(tab);
+        ActiveTab = tab;
+        tab.IsEditing = true;
+    }
+
+    /// <summary>Inserts a new tab immediately after <paramref name="targetTab"/>, activates it, and starts inline rename.</summary>
+    [RelayCommand]
+    private void AddTabAfter(TabViewModel? targetTab)
+    {
+        var tab = new TabViewModel(GenerateUniqueTabName());
+        if (targetTab is not null)
+        {
+            var index = Tabs.IndexOf(targetTab);
+            if (index >= 0)
+            {
+                Tabs.Insert(index + 1, tab);
+            }
+            else
+            {
+                Tabs.Add(tab);
+            }
+        }
+        else
+        {
+            Tabs.Add(tab);
+        }
+
+        ActiveTab = tab;
+        tab.IsEditing = true;
+    }
+
+    /// <summary>Removes <paramref name="tab"/> from the tab bar.  The last remaining tab cannot be deleted.</summary>
+    [RelayCommand]
+    private void DeleteTab(TabViewModel? tab)
+    {
+        if (tab is null || Tabs.Count <= 1)
+        {
+            return;
+        }
+
+        var index = Tabs.IndexOf(tab);
+        Tabs.Remove(tab);
+
+        if (ActiveTab == tab)
+        {
+            ActiveTab = Tabs[Math.Min(index, Tabs.Count - 1)];
+        }
+    }
+
+    /// <summary>Generates a unique tab name of the form "Tab N".</summary>
+    private string GenerateUniqueTabName()
+    {
+        int index = 1;
+        while (Tabs.Any(t => t.Name == $"Tab {index}"))
+        {
+            index++;
+        }
+
+        return $"Tab {index}";
     }
 
     /// <summary>Adds a new node of the given type to the canvas at a default staggered position.</summary>
@@ -268,13 +377,21 @@ public partial class MainWindowViewModel : ViewModelBase
             _ => null,
         };
 
-    /// <summary>Clears all nodes and connections from the graph.</summary>
+    /// <summary>Clears all nodes and connections from the graph and resets to a single default tab.</summary>
     [RelayCommand]
     private void NewGraph()
     {
-        Connections.Clear();
-        Nodes.Clear();
-        SelectedNode = null;
+        // Create and register the new tab before clearing so ActiveTab is never null.
+        var newTab = new TabViewModel("Main");
+        Tabs.Add(newTab);
+        ActiveTab = newTab;
+
+        // Remove every tab except the freshly added one.
+        for (var i = Tabs.Count - 2; i >= 0; i--)
+        {
+            Tabs.RemoveAt(i);
+        }
+
         GraphName = string.Empty;
         GraphVersion = string.Empty;
     }
@@ -289,17 +406,31 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Serializes the current node graph to a JSON string.</summary>
-    /// <returns>A JSON string representing the graph state.</returns>
+    /// <summary>Serializes the current node graph (all tabs) to a JSON string.</summary>
+    /// <returns>A JSON string representing the full graph state including all tabs.</returns>
     public string SerializeGraph()
     {
         var data = new GraphData
         {
             Name = string.IsNullOrWhiteSpace(GraphName) ? null : GraphName,
             Version = string.IsNullOrWhiteSpace(GraphVersion) ? null : GraphVersion,
+            Tabs = [],
         };
 
-        foreach (var node in Nodes)
+        foreach (var tab in Tabs)
+        {
+            data.Tabs.Add(SerializeTab(tab));
+        }
+
+        return JsonSerializer.Serialize(data, GraphJsonContext.Default.GraphData);
+    }
+
+    /// <summary>Converts a single <see cref="TabViewModel"/> into its serialization DTO.</summary>
+    private static TabData SerializeTab(TabViewModel tab)
+    {
+        var tabData = new TabData { Title = tab.Name };
+
+        foreach (var node in tab.Nodes)
         {
             var nodeData = new NodeData
             {
@@ -335,57 +466,104 @@ public partial class MainWindowViewModel : ViewModelBase
                     break;
             }
 
-            data.Nodes.Add(nodeData);
+            tabData.Nodes.Add(nodeData);
 
-            // Store layout separately
-            data.Layout[node.Name] = new LayoutData
+            // Store layout separately so visual position is decoupled from node content.
+            tabData.Layout[node.Name] = new LayoutData
             {
                 X = node.Location.X,
                 Y = node.Location.Y,
             };
         }
 
-        foreach (var connection in Connections)
+        foreach (var connection in tab.Connections)
         {
-            var (sourceNodeName, sourceConnectorName) = FindConnectorName(connection.Source);
-            var (targetNodeName, targetConnectorName) = FindConnectorName(connection.Target);
+            var (sourceNodeName, sourceConnectorName) = FindConnectorNameInNodes(tab.Nodes, connection.Source);
+            var (targetNodeName, targetConnectorName) = FindConnectorNameInNodes(tab.Nodes, connection.Target);
 
             if (sourceNodeName is null || targetNodeName is null)
             {
                 continue;
             }
 
-            data.Connections.Add(new ConnectionData
+            tabData.Connections.Add(new ConnectionData
             {
                 From = $"{sourceNodeName}.{sourceConnectorName}",
                 To = $"{targetNodeName}.{targetConnectorName}",
             });
         }
 
-        return JsonSerializer.Serialize(data, GraphJsonContext.Default.GraphData);
+        return tabData;
     }
 
-    /// <summary>Deserializes a JSON string and restores the node graph state.</summary>
+    /// <summary>Deserializes a JSON string and restores the node graph state (all tabs).</summary>
     /// <param name="json">A JSON string previously produced by <see cref="SerializeGraph"/>.</param>
     public void DeserializeGraph(string json)
     {
         var data = JsonSerializer.Deserialize(json, GraphJsonContext.Default.GraphData)
             ?? throw new JsonException("Failed to deserialize graph data.");
 
-        // Clear current state
-        Connections.Clear();
-        Nodes.Clear();
+        // Keep ActiveTab non-null during the reset by staging the first restored tab.
         SelectedNode = null;
-
-        // Restore graph-level properties
         GraphName = data.Name ?? string.Empty;
         GraphVersion = data.Version ?? string.Empty;
 
-        // Restore nodes
-        foreach (var nodeData in data.Nodes)
+        if (data.Tabs is { Count: > 0 })
         {
-            // Resolve layout position from the layout dictionary
-            var position = data.Layout.TryGetValue(nodeData.Name, out var layoutData)
+            // Multi-tab format
+            var restoredTabs = new List<TabViewModel>();
+            foreach (var tabData in data.Tabs)
+            {
+                var tab = new TabViewModel(tabData.Title);
+                RestoreTabContent(tab, tabData.Nodes, tabData.Layout, tabData.Connections);
+                restoredTabs.Add(tab);
+            }
+
+            ReplaceAllTabs(restoredTabs);
+        }
+        else
+        {
+            // Legacy single-tab format (files saved before the tabs feature).
+            var tab = new TabViewModel("Tab 1");
+            RestoreTabContent(tab, data.Nodes, data.Layout, data.Connections);
+            ReplaceAllTabs([tab]);
+        }
+    }
+
+    /// <summary>
+    /// Replaces the entire <see cref="Tabs"/> collection with <paramref name="newTabs"/>,
+    /// keeping <see cref="ActiveTab"/> valid at all times.
+    /// </summary>
+    private void ReplaceAllTabs(IReadOnlyList<TabViewModel> newTabs)
+    {
+        // Activate the first new tab before clearing the old ones so ActiveTab is never null.
+        var first = newTabs[0];
+        Tabs.Add(first);
+        ActiveTab = first;
+
+        // Remove all previously existing tabs (everything before the last appended entry).
+        for (var i = Tabs.Count - 2; i >= 0; i--)
+        {
+            Tabs.RemoveAt(i);
+        }
+
+        // Append any remaining new tabs.
+        for (var i = 1; i < newTabs.Count; i++)
+        {
+            Tabs.Add(newTabs[i]);
+        }
+    }
+
+    /// <summary>Restores nodes and connections from serialization DTOs into a <see cref="TabViewModel"/>.</summary>
+    private void RestoreTabContent(
+        TabViewModel tab,
+        IReadOnlyList<NodeData> nodes,
+        IReadOnlyDictionary<string, LayoutData> layout,
+        IReadOnlyList<ConnectionData> connections)
+    {
+        foreach (var nodeData in nodes)
+        {
+            var position = layout.TryGetValue(nodeData.Name, out var layoutData)
                 ? new Point(layoutData.X, layoutData.Y)
                 : default;
 
@@ -401,33 +579,31 @@ public partial class MainWindowViewModel : ViewModelBase
 
             node.Name = nodeData.Name;
 
-            // Track selection and name changes.
             TrackNodeSelection(node);
             TrackNodeName(node);
 
-            Nodes.Add(node);
+            tab.Nodes.Add(node);
         }
 
-        // Restore connections
-        foreach (var connectionData in data.Connections)
+        foreach (var connectionData in connections)
         {
-            var source = ResolveConnector(connectionData.From);
-            var target = ResolveConnector(connectionData.To);
+            var source = ResolveConnectorInNodes(tab.Nodes, connectionData.From);
+            var target = ResolveConnectorInNodes(tab.Nodes, connectionData.To);
 
             if (source is null || target is null)
             {
                 continue;
             }
 
-            Connections.Add(new ConnectionViewModel(source, target));
+            tab.Connections.Add(new ConnectionViewModel(source, target));
             source.IsConnected = true;
             target.IsConnected = true;
         }
 
-        ValidateAllNodeNames();
+        ValidateNodeNamesInCollection(tab.Nodes);
     }
 
-    /// <summary>Generates a unique default name for a new node of the given type.</summary>
+    /// <summary>Generates a unique default name for a new node of the given type within the active tab.</summary>
     internal string GenerateUniqueName(string nodeType)
     {
         int index = 1;
@@ -439,10 +615,13 @@ public partial class MainWindowViewModel : ViewModelBase
         return $"{nodeType} {index}";
     }
 
-    /// <summary>Validates all node names for uniqueness and sets <see cref="NodeViewModel.HasNameError"/> accordingly.</summary>
-    internal void ValidateAllNodeNames()
+    /// <summary>Validates all node names in the active tab for uniqueness and sets <see cref="NodeViewModel.HasNameError"/> accordingly.</summary>
+    internal void ValidateAllNodeNames() => ValidateNodeNamesInCollection(Nodes);
+
+    /// <summary>Validates node names in <paramref name="nodes"/> for uniqueness.</summary>
+    private static void ValidateNodeNamesInCollection(IEnumerable<NodeViewModel> nodes)
     {
-        var nameGroups = Nodes.GroupBy(n => n.Name);
+        var nameGroups = nodes.GroupBy(n => n.Name);
         foreach (var group in nameGroups)
         {
             bool hasDuplicate = group.Count() > 1;
@@ -511,10 +690,15 @@ public partial class MainWindowViewModel : ViewModelBase
         };
     }
 
-    /// <summary>Finds the node name and connector name for a given connector view model.</summary>
-    private (string? nodeName, string? connectorName) FindConnectorName(ConnectorViewModel connector)
+    /// <summary>Finds the node name and connector name for a given connector view model in the active tab.</summary>
+    private (string? nodeName, string? connectorName) FindConnectorName(ConnectorViewModel connector) =>
+        FindConnectorNameInNodes(Nodes, connector);
+
+    /// <summary>Finds the node name and connector name for a given connector in an arbitrary node collection.</summary>
+    private static (string? nodeName, string? connectorName) FindConnectorNameInNodes(
+        IEnumerable<NodeViewModel> nodes, ConnectorViewModel connector)
     {
-        foreach (var node in Nodes)
+        foreach (var node in nodes)
         {
             foreach (var output in node.Outputs)
             {
@@ -536,8 +720,13 @@ public partial class MainWindowViewModel : ViewModelBase
         return (null, null);
     }
 
-    /// <summary>Resolves a connector from a "NodeName.ConnectorName" string.</summary>
-    private ConnectorViewModel? ResolveConnector(string endpoint)
+    /// <summary>Resolves a connector from a "NodeName.ConnectorName" string in the active tab.</summary>
+    private ConnectorViewModel? ResolveConnector(string endpoint) =>
+        ResolveConnectorInNodes(Nodes, endpoint);
+
+    /// <summary>Resolves a connector from a "NodeName.ConnectorName" string in an arbitrary node collection.</summary>
+    private static ConnectorViewModel? ResolveConnectorInNodes(
+        IEnumerable<NodeViewModel> nodes, string endpoint)
     {
         var dotIndex = endpoint.LastIndexOf('.');
         if (dotIndex < 0)
@@ -548,7 +737,7 @@ public partial class MainWindowViewModel : ViewModelBase
         var nodeName = endpoint[..dotIndex];
         var connectorName = endpoint[(dotIndex + 1)..];
 
-        var node = Nodes.FirstOrDefault(n => n.Name == nodeName);
+        var node = nodes.FirstOrDefault(n => n.Name == nodeName);
         if (node is null)
         {
             return null;

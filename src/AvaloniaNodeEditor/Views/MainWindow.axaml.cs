@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -7,6 +8,7 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using AvaloniaNodeEditor.ViewModels;
 using NodifyM.Avalonia.Controls;
@@ -388,6 +390,124 @@ public partial class MainWindow : Window
     {
         var dialog = new AboutDialog();
         await dialog.ShowDialog(this);
+    }
+
+    // ── Tab bar ──────────────────────────────────────────────────────────────
+
+    /// <summary>Adds a new tab at the end of the tab bar.</summary>
+    private void OnAddTabClick(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.AddTabCommand.Execute(null);
+            FocusActiveTabRenameBox();
+        }
+    }
+
+    /// <summary>Context menu: inserts a new tab to the right of the right-clicked tab.</summary>
+    private void OnTabContextMenuNewTab(object? sender, RoutedEventArgs e)
+    {
+        if (GetTabFromContextMenuItem(sender) is { } tab && DataContext is MainWindowViewModel vm)
+        {
+            vm.AddTabAfterCommand.Execute(tab);
+            FocusActiveTabRenameBox();
+        }
+    }
+
+    /// <summary>Context menu: enters inline-rename mode for the right-clicked tab.</summary>
+    private void OnTabContextMenuRename(object? sender, RoutedEventArgs e)
+    {
+        if (GetTabFromContextMenuItem(sender) is { } tab)
+        {
+            tab.IsEditing = true;
+            FocusActiveTabRenameBox();
+        }
+    }
+
+    /// <summary>Context menu: deletes the right-clicked tab.</summary>
+    private void OnTabContextMenuDelete(object? sender, RoutedEventArgs e)
+    {
+        if (GetTabFromContextMenuItem(sender) is { } tab && DataContext is MainWindowViewModel vm)
+        {
+            vm.DeleteTabCommand.Execute(tab);
+        }
+    }
+
+    /// <summary>
+    /// Resolves the <see cref="TabViewModel"/> associated with a context menu item.
+    /// The DataContext of a <see cref="MenuItem"/> inside a <see cref="ContextMenu"/> is
+    /// inherited from the <see cref="ContextMenu"/>'s PlacementTarget, which in this case
+    /// is the <see cref="Panel"/> defined in the tab item DataTemplate.
+    /// </summary>
+    private static TabViewModel? GetTabFromContextMenuItem(object? sender)
+    {
+        if (sender is not MenuItem menuItem)
+        {
+            return null;
+        }
+
+        // DataContext is normally propagated from the PlacementTarget automatically.
+        if (menuItem.DataContext is TabViewModel tab)
+        {
+            return tab;
+        }
+
+        // Fallback: walk up to the ContextMenu and read PlacementTarget.DataContext.
+        var parent = menuItem.Parent;
+        while (parent is not null)
+        {
+            if (parent is ContextMenu { PlacementTarget.DataContext: TabViewModel tabFromPlacement })
+            {
+                return tabFromPlacement;
+            }
+
+            parent = (parent as StyledElement)?.Parent;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Posts a deferred action to focus and select-all the rename <see cref="TextBox"/>
+    /// of whichever tab currently has <see cref="TabViewModel.IsEditing"/> set.
+    /// The post is required so Avalonia has time to show the TextBox before focus is set.
+    /// </summary>
+    private void FocusActiveTabRenameBox()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var textBox = TabListBox?.GetVisualDescendants()
+                .OfType<TextBox>()
+                .FirstOrDefault(tb => tb.IsVisible && tb.DataContext is TabViewModel { IsEditing: true });
+            if (textBox is not null)
+            {
+                textBox.Focus();
+                textBox.SelectAll();
+            }
+        });
+    }
+
+    /// <summary>Commits the inline tab rename when the editing TextBox loses focus.</summary>
+    private void OnTabTextBoxLostFocus(object? sender, RoutedEventArgs e){
+        if (sender is TextBox { DataContext: TabViewModel tab })
+        {
+            tab.IsEditing = false;
+        }
+    }
+
+    /// <summary>Commits (Enter/Escape) the inline tab rename via keyboard.</summary>
+    private void OnTabTextBoxKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (sender is not TextBox { DataContext: TabViewModel tab })
+        {
+            return;
+        }
+
+        if (e.Key is Key.Enter or Key.Escape)
+        {
+            tab.IsEditing = false;
+            e.Handled = true;
+        }
     }
 
     /// <inheritdoc/>
