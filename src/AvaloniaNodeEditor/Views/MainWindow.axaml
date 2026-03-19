@@ -252,14 +252,18 @@
 
                 <!-- "+" button — always on the right edge -->
                 <Button DockPanel.Dock="Right"
-                        Content="+"
                         Click="OnAddTabClick"
                         Width="30"
                         Height="30"
                         Padding="0"
                         VerticalAlignment="Center"
+                        HorizontalContentAlignment="Center"
                         ToolTip.Tip="Add new tab"
-                        AutomationProperties.Name="Add new tab"/>
+                        AutomationProperties.Name="Add new tab">
+                    <TextBlock Text="+"
+                            FontFamily="{StaticResource NotoSymbolsFont}"
+                            FontSize="24"/>
+                </Button>
 
                 <!-- Scrollable tab list -->
                 <ListBox x:Name="TabListBox"
