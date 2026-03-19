@@ -137,6 +137,7 @@ public partial class MainWindowViewModel : ViewModelBase
         CommitPendingRename(oldValue);
         CopyNodeCommand.NotifyCanExecuteChanged();
         DeleteNodeCommand.NotifyCanExecuteChanged();
+        MoveNodeToTabCommand.NotifyCanExecuteChanged();
     }
 
     // ── Tab management ────────────────────────────────────────────────────────
@@ -448,6 +449,45 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     private bool CanDeleteNode() => SelectedNode is not null;
+
+    /// <summary>Moves the currently selected node to <paramref name="targetTab"/>, removing all of its connections.</summary>
+    [RelayCommand(CanExecute = nameof(CanMoveNodeToTab))]
+    private void MoveNodeToTab(TabViewModel? targetTab)
+    {
+        if (SelectedNode is null || targetTab is null || ActiveTab is null || targetTab == ActiveTab)
+        {
+            return;
+        }
+
+        CommitPendingRename(SelectedNode);
+
+        var node = SelectedNode;
+        var sourceTab = ActiveTab;
+
+        // Remove all connections involving this node from the source tab.
+        var toRemove = sourceTab.Connections
+            .Where(c => node.Inputs.Contains(c.Target) || node.Outputs.Contains(c.Source))
+            .ToList();
+
+        foreach (var conn in toRemove)
+        {
+            sourceTab.Connections.Remove(conn);
+            UpdateIsConnected(conn.Source);
+            UpdateIsConnected(conn.Target);
+        }
+
+        sourceTab.Nodes.Remove(node);
+        SelectedNode = null;
+        targetTab.Nodes.Add(node);
+
+        _undoRedoManager.Record(new MoveNodeToTabAction(this, node, sourceTab, targetTab, toRemove));
+
+        ValidateNodeNamesInTab(sourceTab);
+        ValidateNodeNamesInTab(targetTab);
+    }
+
+    private bool CanMoveNodeToTab(TabViewModel? targetTab) =>
+        SelectedNode is not null && targetTab is not null && targetTab != ActiveTab;
 
     /// <summary>Creates a copy of <paramref name="source"/> at <paramref name="position"/>, preserving all type-specific properties.</summary>
     private static NodeViewModel? CloneNode(NodeViewModel source, Point position) =>

@@ -1371,4 +1371,205 @@ public class MainWindowViewModelTests
         Assert.Single(viewModel.Tabs);
         Assert.Equal("Main", viewModel.Tabs[0].Name);
     }
+
+    // ── MoveNodeToTab ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void MoveNodeToTabCommand_CannotExecute_WhenNoNodeSelected()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null);
+        var targetTab = viewModel.Tabs[1];
+
+        Assert.False(viewModel.MoveNodeToTabCommand.CanExecute(targetTab));
+    }
+
+    [Fact]
+    public void MoveNodeToTabCommand_CannotExecute_WhenTargetIsSameTab()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+
+        Assert.False(viewModel.MoveNodeToTabCommand.CanExecute(viewModel.ActiveTab));
+    }
+
+    [Fact]
+    public void MoveNodeToTab_RemovesNodeFromSourceTab()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        var node = viewModel.Nodes[0];
+        viewModel.AddTabCommand.Execute(null);
+        var targetTab = viewModel.Tabs[1];
+        viewModel.ActiveTab = viewModel.Tabs[0];
+        viewModel.SelectedNode = node;
+
+        // Act
+        viewModel.MoveNodeToTabCommand.Execute(targetTab);
+
+        // Assert
+        Assert.Empty(viewModel.Tabs[0].Nodes);
+    }
+
+    [Fact]
+    public void MoveNodeToTab_AddsNodeToTargetTab()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        var node = viewModel.Nodes[0];
+        viewModel.AddTabCommand.Execute(null);
+        var targetTab = viewModel.Tabs[1];
+        viewModel.ActiveTab = viewModel.Tabs[0];
+        viewModel.SelectedNode = node;
+
+        // Act
+        viewModel.MoveNodeToTabCommand.Execute(targetTab);
+
+        // Assert
+        Assert.Single(targetTab.Nodes);
+        Assert.Same(node, targetTab.Nodes[0]);
+    }
+
+    [Fact]
+    public void MoveNodeToTab_ClearsSelectedNode()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        var node = viewModel.Nodes[0];
+        viewModel.AddTabCommand.Execute(null);
+        var targetTab = viewModel.Tabs[1];
+        viewModel.ActiveTab = viewModel.Tabs[0];
+        viewModel.SelectedNode = node;
+
+        // Act
+        viewModel.MoveNodeToTabCommand.Execute(targetTab);
+
+        // Assert
+        Assert.Null(viewModel.SelectedNode);
+    }
+
+    [Fact]
+    public void MoveNodeToTab_RemovesConnectionsAttachedToMovedNode()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+        Assert.Single(viewModel.Connections);
+
+        viewModel.AddTabCommand.Execute(null);
+        var targetTab = viewModel.Tabs[1];
+        viewModel.ActiveTab = viewModel.Tabs[0];
+
+        // Select the producer and move it.
+        viewModel.SelectedNode = viewModel.Nodes[0];
+
+        // Act
+        viewModel.MoveNodeToTabCommand.Execute(targetTab);
+
+        // Assert — connection was removed from source tab
+        Assert.Empty(viewModel.Tabs[0].Connections);
+    }
+
+    [Fact]
+    public void MoveNodeToTab_UpdatesIsConnectedOnRemainingConnectors()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var reporterInput = viewModel.Nodes[1].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, reporterInput));
+        Assert.True(reporterInput.IsConnected);
+
+        viewModel.AddTabCommand.Execute(null);
+        var targetTab = viewModel.Tabs[1];
+        viewModel.ActiveTab = viewModel.Tabs[0];
+        viewModel.SelectedNode = viewModel.Nodes[0];
+
+        // Act
+        viewModel.MoveNodeToTabCommand.Execute(targetTab);
+
+        // Assert — reporter's input connector is no longer marked connected
+        Assert.False(reporterInput.IsConnected);
+    }
+
+    [Fact]
+    public void MoveNodeToTab_UndoRestoresNodeToSourceTab()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        var node = viewModel.Nodes[0];
+        viewModel.AddTabCommand.Execute(null);
+        var sourceTab = viewModel.Tabs[0];
+        var targetTab = viewModel.Tabs[1];
+        viewModel.ActiveTab = sourceTab;
+        viewModel.SelectedNode = node;
+        viewModel.MoveNodeToTabCommand.Execute(targetTab);
+
+        // Act
+        viewModel.UndoCommand.Execute(null);
+
+        // Assert
+        Assert.Contains(node, sourceTab.Nodes);
+        Assert.Empty(targetTab.Nodes);
+    }
+
+    [Fact]
+    public void MoveNodeToTab_UndoRestoresRemovedConnections()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200));
+        var source = viewModel.Nodes[0].Outputs[0];
+        var target = viewModel.Nodes[1].Inputs[0];
+        viewModel.ConnectionCompletedCommand.Execute((source, target));
+
+        viewModel.AddTabCommand.Execute(null);
+        var sourceTab = viewModel.Tabs[0];
+        var targetTab = viewModel.Tabs[1];
+        viewModel.ActiveTab = sourceTab;
+        viewModel.SelectedNode = viewModel.Nodes[0];
+        viewModel.MoveNodeToTabCommand.Execute(targetTab);
+
+        // Act
+        viewModel.UndoCommand.Execute(null);
+
+        // Assert — connection is restored in source tab
+        Assert.Single(sourceTab.Connections);
+        Assert.True(target.IsConnected);
+    }
+
+    [Fact]
+    public void MoveNodeToTab_RedoReappliesMoveAfterUndo()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(0, 0));
+        var node = viewModel.Nodes[0];
+        viewModel.AddTabCommand.Execute(null);
+        var sourceTab = viewModel.Tabs[0];
+        var targetTab = viewModel.Tabs[1];
+        viewModel.ActiveTab = sourceTab;
+        viewModel.SelectedNode = node;
+        viewModel.MoveNodeToTabCommand.Execute(targetTab);
+        viewModel.UndoCommand.Execute(null);
+
+        // Act
+        viewModel.RedoCommand.Execute(null);
+
+        // Assert
+        Assert.Empty(sourceTab.Nodes);
+        Assert.Single(targetTab.Nodes);
+        Assert.Same(node, targetTab.Nodes[0]);
+    }
 }
