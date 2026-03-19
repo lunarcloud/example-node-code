@@ -3,6 +3,41 @@
 Project-specific guidance for agents working on Avalonia Node Editor - a cross-platform
 desktop application using Avalonia UI and NodifyM.Avalonia.
 
+## Available Specialized Agents
+
+- **requirements** agent - Develops requirements and ensures test coverage linkage
+- **technical-writer** agent - Creates accurate documentation following regulatory best practices
+- **software-developer** agent - Writes production code following MVVM pattern in literate style
+- **test-developer** agent - Creates unit and integration tests following AAA pattern with xUnit
+- **code-quality** agent - Enforces linting, static analysis, and security standards
+- **code-review** agent - Assists in performing formal file reviews
+- **repo-consistency** agent - Ensures downstream repositories remain consistent with template patterns
+
+## Agent Selection Guide
+
+- Fix a bug → call the @software-developer agent with the **request** to fix the bug and the **context** of the
+  bug details
+- Add a new feature → call the @requirements agent with the **request** to define the feature requirements and the
+  **context** of the feature details, then call the @software-developer agent with the **request** to implement the
+  feature and the **context** of the requirements, then call the @test-developer agent with the **request** to add
+  tests and the **context** of the feature implemented
+- Write a test → call the @test-developer agent with the **request** to write the test and the **context** of
+  what needs to be tested
+- Fix linting or static analysis issues → call the @code-quality agent with the **request** to fix the issues
+  and the **context** of the errors encountered
+- Update documentation → call the @technical-writer agent with the **request** to update the documentation and
+  the **context** of what needs to change
+- Add or update requirements → call the @requirements agent with the **request** to add or update requirements
+  and the **context** of the feature details
+- Ensure test coverage linkage in `requirements.yaml` → call the @requirements agent with the **request** to
+  ensure test coverage linkage and the **context** of the current coverage gaps
+- Run security scanning or address CodeQL alerts → call the @code-quality agent with the **request** to address
+  security scanning or CodeQL alerts and the **context** of the alerts found
+- Perform a formal file review → call the @code-review agent with the **request** to perform a formal review and
+  the **context** of the review-set name
+- Propagate template changes → call the @repo-consistency agent with the **request** to propagate template
+  changes and the **context** of the downstream repository
+
 ## Tech Stack
 
 - C# 12, .NET 10.0, dotnet CLI, NuGet
@@ -12,9 +47,9 @@ desktop application using Avalonia UI and NodifyM.Avalonia.
 
 ## Key Files
 
-- **`requirements.yaml`** - All requirements for the application
+- **`requirements.yaml`** - All requirements with test linkage (enforced via `dotnet reqstream --enforce`)
 - **`.editorconfig`** - Code style (file-scoped namespaces, 4-space indent, UTF-8+BOM, LF endings)
-- **`.cspell.json`, `.markdownlint.json`, `.yamllint.yaml`** - Linting configs
+- **`.cspell.yaml`, `.markdownlint-cli2.yaml`, `.yamllint.yaml`** - Linting configs
 - **`AvaloniaNodeEditor.slnx`** - XML-based solution file
 - **[`.github/nodify-library.md`][nodify-ref]** - NodifyM.Avalonia library reference (controls, bindings, commands, pitfalls)
 
@@ -36,25 +71,17 @@ desktop application using Avalonia UI and NodifyM.Avalonia.
 
 - **Views/**: AXAML files and code-behind for UI
 - **ViewModels/**: ViewModels with observable properties
-- **Models/**: Business logic and data models (to be added as needed)
+- **Models/**: Business logic and data models
 - **App.axaml**: Application-level styles and resources
-
-## Standard Command-Line Arguments
-
-All DEMA Consulting tools should support:
-
-- `-v`, `--version` - Display version information
-- `-?`, `-h`, `--help` - Display help message
-- `--silent` - Suppress console output
-- `--validate` - Run self-validation
-- `--results <file>` - Write validation results to file (TRX or JUnit format)
-- `--log <file>` - Write output to log file
 
 ## Build and Test
 
 ```bash
 # Build the project
 dotnet build --configuration Release
+
+# Run unit tests
+dotnet test --configuration Release
 
 # Run the application
 dotnet run --project src/AvaloniaNodeEditor/AvaloniaNodeEditor.csproj
@@ -67,17 +94,24 @@ build.bat     # Windows
 ## Documentation
 
 - **User Guide**: `docs/guide/guide.md`
-- **Requirements**: `requirements.yaml` -> auto-generated docs
+- **Requirements**: `requirements.yaml` → auto-generated docs
 - **Build Notes**: Auto-generated via BuildMark
 - **Code Quality**: Auto-generated via CodeQL and SonarMark
 - **Trace Matrix**: Auto-generated via ReqStream
+
+## Markdown Link Style
+
+- **AI agent markdown files** (`.github/agents/*.agent.md`): Use inline links `[text](url)` so URLs are visible
+  in agent context
+- **README.md**: Use absolute URLs (shipped in NuGet package)
+- **All other markdown files**: Use reference-style links `[text][ref]` with `[ref]: url` at document end
 
 ## CI/CD
 
 - **Quality Checks**: Markdown lint, spell check, YAML lint
 - **Build**: Multi-platform (Windows/Linux)
 - **CodeQL**: Security scanning
-- **Integration Tests**: .NET 8/9/10 on Windows/Linux
+- **Unit Tests**: xUnit on Windows/Linux
 - **Documentation**: Auto-generated via Pandoc + Weasyprint
 
 ## Common Tasks
@@ -89,9 +123,18 @@ dotnet format
 # Run all linters
 ./lint.sh     # Linux/macOS
 lint.bat      # Windows
-
-# Pack as NuGet tool
-dotnet pack --configuration Release
 ```
+
+## Agent Report Files
+
+When agents need to write report files to communicate with each other or the user, follow these guidelines:
+
+- **Naming Convention**: Use the pattern `AGENT_REPORT_xxxx.md` (e.g., `AGENT_REPORT_analysis.md`,
+  `AGENT_REPORT_results.md`)
+- **Purpose**: These files are for temporary inter-agent communication and should not be committed
+- **Exclusions**: Files matching `AGENT_REPORT_*.md` are automatically:
+  - Excluded from git (via .gitignore)
+  - Excluded from markdown linting
+  - Excluded from spell checking
 
 [nodify-ref]: .github/nodify-library.md
