@@ -91,10 +91,12 @@
                             </ribbon:RibbonButton>
                         </ribbon:RibbonGroupBox>
 
-                        <!-- Edit Group -->
+                        <!-- Edit Group: Undo is the primary action (Large); Redo/Copy/Paste/Delete
+                             are secondary and displayed as medium items in stacked lines. -->
                         <ribbon:RibbonGroupBox Header="Edit">
                             <ribbon:RibbonButton Content="Undo"
                                                  Command="{Binding UndoCommand}"
+                                                 MinSize="Large" MaxSize="Large"
                                                  ToolTip.Tip="Undo last action (Ctrl+Z)"
                                                  AutomationProperties.Name="Undo">
                                 <ribbon:RibbonButton.LargeIcon>
@@ -103,46 +105,103 @@
                                                FontSize="24"/>
                                 </ribbon:RibbonButton.LargeIcon>
                             </ribbon:RibbonButton>
-                            <ribbon:RibbonButton Content="Redo"
-                                                 Command="{Binding RedoCommand}"
-                                                 ToolTip.Tip="Redo last undone action (Ctrl+Y)"
-                                                 AutomationProperties.Name="Redo">
-                                <ribbon:RibbonButton.LargeIcon>
-                                    <TextBlock Text="↪"
-                                               FontFamily="{StaticResource NotoSymbolsFont}"
-                                               FontSize="24"/>
-                                </ribbon:RibbonButton.LargeIcon>
-                            </ribbon:RibbonButton>
-                            <ribbon:RibbonButton Content="Copy"
-                                                 Command="{Binding CopyNodeCommand}"
-                                                 ToolTip.Tip="Copy selected node (Ctrl+C)"
-                                                 AutomationProperties.Name="Copy node">
-                                <ribbon:RibbonButton.LargeIcon>
-                                    <TextBlock Text="🗐"
-                                               FontFamily="{StaticResource NotoSymbolsFont}"
-                                               FontSize="24"/>
-                                </ribbon:RibbonButton.LargeIcon>
-                            </ribbon:RibbonButton>
-                            <ribbon:RibbonButton Content="Paste"
-                                                 Command="{Binding PasteNodeCommand}"
-                                                 ToolTip.Tip="Paste copied node (Ctrl+V)"
-                                                 AutomationProperties.Name="Paste node">
-                                <ribbon:RibbonButton.LargeIcon>
-                                    <TextBlock Text="📋"
-                                               FontFamily="{StaticResource NotoSymbolsFont}"
-                                               FontSize="24"/>
-                                </ribbon:RibbonButton.LargeIcon>
-                            </ribbon:RibbonButton>
-                            <ribbon:RibbonButton Content="Delete"
-                                                 Command="{Binding DeleteNodeCommand}"
-                                                 ToolTip.Tip="Delete selected node (Del)"
-                                                 AutomationProperties.Name="Delete node">
-                                <ribbon:RibbonButton.LargeIcon>
-                                    <TextBlock Text="🗑"
-                                               FontFamily="{StaticResource NotoSymbolsFont}"
-                                               FontSize="24"/>
-                                </ribbon:RibbonButton.LargeIcon>
-                            </ribbon:RibbonButton>
+                            <ribbon:RibbonGroupLines>
+                                <ribbon:RibbonButton Content="Redo"
+                                                     Command="{Binding RedoCommand}"
+                                                     MinSize="Small" MaxSize="Medium"
+                                                     ToolTip.Tip="Redo last undone action (Ctrl+Y)"
+                                                     AutomationProperties.Name="Redo">
+                                    <ribbon:RibbonButton.Icon>
+                                        <TextBlock Text="↪"
+                                                   FontFamily="{StaticResource NotoSymbolsFont}"
+                                                   FontSize="16"/>
+                                    </ribbon:RibbonButton.Icon>
+                                    <ribbon:RibbonButton.LargeIcon>
+                                        <TextBlock Text="↪"
+                                                   FontFamily="{StaticResource NotoSymbolsFont}"
+                                                   FontSize="24"/>
+                                    </ribbon:RibbonButton.LargeIcon>
+                                </ribbon:RibbonButton>
+                                <ribbon:RibbonButton Content="Copy"
+                                                     Command="{Binding CopyNodeCommand}"
+                                                     MinSize="Small" MaxSize="Medium"
+                                                     ToolTip.Tip="Copy selected node (Ctrl+C)"
+                                                     AutomationProperties.Name="Copy node">
+                                    <ribbon:RibbonButton.Icon>
+                                        <TextBlock Text="🗐"
+                                                   FontFamily="{StaticResource NotoSymbolsFont}"
+                                                   FontSize="16"/>
+                                    </ribbon:RibbonButton.Icon>
+                                    <ribbon:RibbonButton.LargeIcon>
+                                        <TextBlock Text="🗐"
+                                                   FontFamily="{StaticResource NotoSymbolsFont}"
+                                                   FontSize="24"/>
+                                    </ribbon:RibbonButton.LargeIcon>
+                                </ribbon:RibbonButton>
+                                <ribbon:RibbonButton Content="Paste"
+                                                     Command="{Binding PasteNodeCommand}"
+                                                     MinSize="Small" MaxSize="Medium"
+                                                     ToolTip.Tip="Paste copied node (Ctrl+V)"
+                                                     AutomationProperties.Name="Paste node">
+                                    <ribbon:RibbonButton.Icon>
+                                        <TextBlock Text="📋"
+                                                   FontFamily="{StaticResource NotoSymbolsFont}"
+                                                   FontSize="16"/>
+                                    </ribbon:RibbonButton.Icon>
+                                    <ribbon:RibbonButton.LargeIcon>
+                                        <TextBlock Text="📋"
+                                                   FontFamily="{StaticResource NotoSymbolsFont}"
+                                                   FontSize="24"/>
+                                    </ribbon:RibbonButton.LargeIcon>
+                                </ribbon:RibbonButton>
+                                <ribbon:RibbonButton Content="Delete"
+                                                     Command="{Binding DeleteNodeCommand}"
+                                                     MinSize="Small" MaxSize="Medium"
+                                                     ToolTip.Tip="Delete selected node (Del)"
+                                                     AutomationProperties.Name="Delete node">
+                                    <ribbon:RibbonButton.Icon>
+                                        <TextBlock Text="🗑"
+                                                   FontFamily="{StaticResource NotoSymbolsFont}"
+                                                   FontSize="16"/>
+                                    </ribbon:RibbonButton.Icon>
+                                    <ribbon:RibbonButton.LargeIcon>
+                                        <TextBlock Text="🗑"
+                                                   FontFamily="{StaticResource NotoSymbolsFont}"
+                                                   FontSize="24"/>
+                                    </ribbon:RibbonButton.LargeIcon>
+                                </ribbon:RibbonButton>
+                            </ribbon:RibbonGroupLines>
+                        </ribbon:RibbonGroupBox>
+
+                        <!-- Graph Group: name and version are always-visible inline controls
+                             so the user can see and edit them without opening a flyout. -->
+                        <ribbon:RibbonGroupBox Header="Graph">
+                            <StackPanel Spacing="4" Margin="4,2" VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <TextBlock Text="Name"
+                                               Width="46"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"/>
+                                    <TextBox Text="{Binding GraphName}"
+                                             Watermark="Untitled"
+                                             Width="120"
+                                             FontSize="12"
+                                             ToolTip.Tip="Graph name"
+                                             AutomationProperties.Name="Graph name"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <TextBlock Text="Version"
+                                               Width="46"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"/>
+                                    <TextBox Text="{Binding GraphVersion}"
+                                             Watermark="0.0.0"
+                                             Width="120"
+                                             FontSize="12"
+                                             ToolTip.Tip="Graph version"
+                                             AutomationProperties.Name="Graph version"/>
+                                </StackPanel>
+                            </StackPanel>
                         </ribbon:RibbonGroupBox>
 
                         <!-- View Group -->
@@ -157,25 +216,6 @@
                                                FontSize="24"/>
                                 </ribbon:RibbonToggleButton.LargeIcon>
                             </ribbon:RibbonToggleButton>
-                            <!-- Standard Button with Flyout: RibbonDropDownButton does not expose a Flyout property -->
-                            <Button Padding="8,6"
-                                    ToolTip.Tip="View and edit the graph name and version"
-                                    AutomationProperties.Name="Graph properties">
-                                <TextBlock Text="🛈"
-                                           FontFamily="{StaticResource NotoSymbolsFont}"
-                                           FontSize="24"/>
-                                <Button.Flyout>
-                                    <Flyout Placement="Bottom">
-                                        <StackPanel Spacing="6" Width="200" Margin="8">
-                                            <TextBlock Text="Graph Properties" FontWeight="SemiBold"/>
-                                            <TextBlock Text="Name" FontSize="11"/>
-                                            <TextBox Text="{Binding GraphName}" Watermark="Untitled"/>
-                                            <TextBlock Text="Version" FontSize="11"/>
-                                            <TextBox Text="{Binding GraphVersion}" Watermark="0.0.0"/>
-                                        </StackPanel>
-                                    </Flyout>
-                                </Button.Flyout>
-                            </Button>
                         </ribbon:RibbonGroupBox>
 
                         <!-- Help Group -->
