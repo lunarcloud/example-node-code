@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -7,6 +8,7 @@ using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using AvaloniaNodeEditor.ViewModels;
 using NodifyM.Avalonia.Controls;
@@ -398,6 +400,7 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel vm)
         {
             vm.AddTabCommand.Execute(null);
+            FocusActiveTabRenameBox();
         }
     }
 
@@ -407,6 +410,7 @@ public partial class MainWindow : Window
         if (GetTabFromContextMenuItem(sender) is { } tab && DataContext is MainWindowViewModel vm)
         {
             vm.AddTabAfterCommand.Execute(tab);
+            FocusActiveTabRenameBox();
         }
     }
 
@@ -416,6 +420,7 @@ public partial class MainWindow : Window
         if (GetTabFromContextMenuItem(sender) is { } tab)
         {
             tab.IsEditing = true;
+            FocusActiveTabRenameBox();
         }
     }
 
@@ -462,9 +467,28 @@ public partial class MainWindow : Window
         return null;
     }
 
-    /// <summary>Commits the inline tab rename when the editing TextBox loses focus.</summary>
-    private void OnTabTextBoxLostFocus(object? sender, RoutedEventArgs e)
+    /// <summary>
+    /// Posts a deferred action to focus and select-all the rename <see cref="TextBox"/>
+    /// of whichever tab currently has <see cref="TabViewModel.IsEditing"/> set.
+    /// The post is required so Avalonia has time to show the TextBox before focus is set.
+    /// </summary>
+    private void FocusActiveTabRenameBox()
     {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var textBox = TabListBox?.GetVisualDescendants()
+                .OfType<TextBox>()
+                .FirstOrDefault(tb => tb.IsVisible && tb.DataContext is TabViewModel { IsEditing: true });
+            if (textBox is not null)
+            {
+                textBox.Focus();
+                textBox.SelectAll();
+            }
+        });
+    }
+
+    /// <summary>Commits the inline tab rename when the editing TextBox loses focus.</summary>
+    private void OnTabTextBoxLostFocus(object? sender, RoutedEventArgs e){
         if (sender is TextBox { DataContext: TabViewModel tab })
         {
             tab.IsEditing = false;

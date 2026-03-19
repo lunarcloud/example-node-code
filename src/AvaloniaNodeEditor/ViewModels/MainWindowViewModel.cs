@@ -84,7 +84,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>Initialises the view model with a single default tab.</summary>
     public MainWindowViewModel()
     {
-        var defaultTab = new TabViewModel("Tab 1");
+        var defaultTab = new TabViewModel("Main");
         Tabs.Add(defaultTab);
         ActiveTab = defaultTab;
     }
@@ -98,16 +98,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
     // ── Tab management ────────────────────────────────────────────────────────
 
-    /// <summary>Adds a new tab at the end of the tab bar and activates it.</summary>
+    /// <summary>Adds a new tab at the end of the tab bar, activates it, and starts inline rename.</summary>
     [RelayCommand]
     private void AddTab()
     {
         var tab = new TabViewModel(GenerateUniqueTabName());
         Tabs.Add(tab);
         ActiveTab = tab;
+        tab.IsEditing = true;
     }
 
-    /// <summary>Inserts a new tab immediately after <paramref name="targetTab"/> and activates it.</summary>
+    /// <summary>Inserts a new tab immediately after <paramref name="targetTab"/>, activates it, and starts inline rename.</summary>
     [RelayCommand]
     private void AddTabAfter(TabViewModel? targetTab)
     {
@@ -130,6 +131,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
 
         ActiveTab = tab;
+        tab.IsEditing = true;
     }
 
     /// <summary>Removes <paramref name="tab"/> from the tab bar.  The last remaining tab cannot be deleted.</summary>
@@ -380,7 +382,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private void NewGraph()
     {
         // Create and register the new tab before clearing so ActiveTab is never null.
-        var newTab = new TabViewModel("Tab 1");
+        var newTab = new TabViewModel("Main");
         Tabs.Add(newTab);
         ActiveTab = newTab;
 

@@ -1143,9 +1143,9 @@ public class MainWindowViewModelTests
         // Arrange & Act
         var viewModel = new MainWindowViewModel();
 
-        // Assert — one tab named "Tab 1" is created and set as active
+        // Assert — one tab named "Main" is created and set as active
         Assert.Single(viewModel.Tabs);
-        Assert.Equal("Tab 1", viewModel.Tabs[0].Name);
+        Assert.Equal("Main", viewModel.Tabs[0].Name);
         Assert.NotNull(viewModel.ActiveTab);
         Assert.Same(viewModel.Tabs[0], viewModel.ActiveTab);
     }
@@ -1167,30 +1167,46 @@ public class MainWindowViewModelTests
     }
 
     [Fact]
+    public void AddTab_NewTabEntersRenameMode()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null);
+        Assert.True(viewModel.Tabs[1].IsEditing);
+    }
+
+    [Fact]
+    public void AddTabAfter_NewTabEntersRenameMode()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabAfterCommand.Execute(viewModel.Tabs[0]);
+        Assert.True(viewModel.Tabs[1].IsEditing);
+    }
+
+    [Fact]
     public void AddTab_GeneratesUniqueName()
     {
         var viewModel = new MainWindowViewModel();
         viewModel.AddTabCommand.Execute(null);
-        Assert.Equal("Tab 2", viewModel.Tabs[1].Name);
+        Assert.Equal("Tab 1", viewModel.Tabs[1].Name);
     }
 
     [Fact]
     public void AddTabAfter_InsertsAfterTargetTab()
     {
-        // Arrange — two tabs: Tab 1 (index 0) and Tab 2 (index 1)
+        // Arrange — two tabs: Main (index 0) and Tab 1 (index 1)
         var viewModel = new MainWindowViewModel();
-        viewModel.AddTabCommand.Execute(null); // Creates Tab 2
-        var tab1 = viewModel.Tabs[0];
-        var tab2 = viewModel.Tabs[1];
+        viewModel.AddTabCommand.Execute(null); // Creates Tab 1
+        var mainTab = viewModel.Tabs[0];
+        var tab1 = viewModel.Tabs[1];
 
-        // Act — insert a new tab after Tab 1
-        viewModel.AddTabAfterCommand.Execute(tab1);
+        // Act — insert a new tab after Main
+        viewModel.AddTabAfterCommand.Execute(mainTab);
 
-        // Assert — Tab 1, new tab, Tab 2
+        // Assert — Main, new Tab 2, Tab 1
         Assert.Equal(3, viewModel.Tabs.Count);
-        Assert.Same(tab1, viewModel.Tabs[0]);
-        Assert.Equal("Tab 3", viewModel.Tabs[1].Name); // New tab is "Tab 3" (Tab 1 and Tab 2 taken)
-        Assert.Same(tab2, viewModel.Tabs[2]);
+        Assert.Same(mainTab, viewModel.Tabs[0]);
+        Assert.Equal("Tab 2", viewModel.Tabs[1].Name); // New tab is "Tab 2" (Tab 1 is taken)
+        Assert.Same(tab1, viewModel.Tabs[2]);
     }
 
     [Fact]
@@ -1353,6 +1369,6 @@ public class MainWindowViewModelTests
         viewModel.NewGraphCommand.Execute(null);
 
         Assert.Single(viewModel.Tabs);
-        Assert.Equal("Tab 1", viewModel.Tabs[0].Name);
+        Assert.Equal("Main", viewModel.Tabs[0].Name);
     }
 }
