@@ -3,9 +3,11 @@ using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Shapes;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Avalonia.VisualTree;
 using AvaloniaNodeEditor.ViewModels;
 using NodifyM.Avalonia.Controls;
 using Key = Avalonia.Input.Key;
@@ -22,6 +24,12 @@ public partial class MainWindow : Window
     private Point? _galleryDragStart;
     private string? _galleryDragNodeType;
 
+    // ── Middle-mouse-button panning state ──────────────────────────────────
+    private bool _isMiddleMousePanning;
+    private Point _middlePanStartPoint;
+    private double _middlePanStartOffsetX;
+    private double _middlePanStartOffsetY;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -30,6 +38,169 @@ public partial class MainWindow : Window
         DragDrop.SetAllowDrop(NodeEditorControl, true);
         NodeEditorControl.AddHandler(DragDrop.DragOverEvent, OnEditorDragOver);
         NodeEditorControl.AddHandler(DragDrop.DropEvent, OnEditorDrop);
+
+        // Tunnel handler fires before the NodifyEditor's own OnPointerPressed so we can:
+        //   • Intercept bare left-clicks on the empty canvas to prevent the built-in
+        //     left-button panning, and
+        //   • Capture the middle mouse button to start our custom pan gesture.
+        NodeEditorControl.AddHandler(
+            InputElement.PointerPressedEvent,
+            OnEditorPointerPressedTunnel,
+            RoutingStrategies.Tunnel);
+
+        // Bubble handlers (with handledEventsToo: true) track middle-mouse move/release
+        // even after NodifyEditor marks the event as handled.
+        NodeEditorControl.AddHandler(
+            InputElement.PointerMovedEvent,
+            OnEditorPointerMovedMiddle,
+            RoutingStrategies.Bubble,
+            handledEventsToo: true);
+
+        NodeEditorControl.AddHandler(
+            InputElement.PointerReleasedEvent,
+            OnEditorPointerReleasedMiddle,
+            RoutingStrategies.Bubble,
+            handledEventsToo: true);
+
+        // Keep the negative-space overlay in sync with the viewport pan offset.
+        NodeEditorControl.GetObservable(NodifyEditor.OffsetXProperty)
+            .Subscribe(_ => UpdateNegativeSpaceOverlay());
+        NodeEditorControl.GetObservable(NodifyEditor.OffsetYProperty)
+            .Subscribe(_ => UpdateNegativeSpaceOverlay());
+        NodeEditorControl.SizeChanged += (_, _) => UpdateNegativeSpaceOverlay();
+        NegativeSpaceCanvas.SizeChanged += (_, _) => UpdateNegativeSpaceOverlay();
+    }
+
+    // ── Negative-space overlay ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Repositions the two overlay rectangles so they cover exactly the visible
+    /// portion of the canvas where X &lt; 0 or Y &lt; 0.
+    /// </summary>
+    private void UpdateNegativeSpaceOverlay()
+    {
+        var w = NegativeSpaceCanvas.Bounds.Width;
+        var h = NegativeSpaceCanvas.Bounds.Height;
+
+        // clampedOffsetX/Y: how many screen pixels the canvas origin is from the
+        // top-left corner of the editor.  When OffsetX is positive the canvas has
+        // been panned right, so the area to the LEFT of position OffsetX (i.e.
+        // screen x ∈ [0, OffsetX]) corresponds to canvas x < 0 (negative space).
+        // When OffsetX ≤ 0 the origin is off-screen and no negative X area is visible.
+        var clampedOffsetX = Math.Max(0, NodeEditorControl.OffsetX);
+        var clampedOffsetY = Math.Max(0, NodeEditorControl.OffsetY);
+
+        // Left vertical strip: negative X area (canvas x < 0 is visible to the left of ox).
+        NegSpaceLeft.IsVisible = clampedOffsetX > 0;
+        Canvas.SetLeft(NegSpaceLeft, 0);
+        Canvas.SetTop(NegSpaceLeft, 0);
+        NegSpaceLeft.Width = clampedOffsetX;
+        NegSpaceLeft.Height = h;
+
+        // Top horizontal strip: negative Y area (canvas y < 0 is visible above oy).
+        // Starts at clampedOffsetX so the top-left corner is not painted twice.
+        NegSpaceTop.IsVisible = clampedOffsetY > 0;
+        Canvas.SetLeft(NegSpaceTop, clampedOffsetX);
+        Canvas.SetTop(NegSpaceTop, 0);
+        NegSpaceTop.Width = Math.Max(0, w - clampedOffsetX);
+        NegSpaceTop.Height = clampedOffsetY;
+    }
+
+    // ── Middle-mouse panning ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Tunnel-phase handler: runs before NodifyEditor's own OnPointerPressed.
+    /// <list type="bullet">
+    ///   <item>Middle button → start our custom pan gesture and mark handled so
+    ///     NodifyEditor never sees the press.</item>
+    ///   <item>Left button on empty canvas (no Shift, no Alt) → mark handled so
+    ///     NodifyEditor cannot start its built-in left-button pan.</item>
+    /// </list>
+    /// </summary>
+    private void OnEditorPointerPressedTunnel(object? sender, PointerPressedEventArgs e)
+    {
+        var point = e.GetCurrentPoint(NodeEditorControl);
+        var props = point.Properties;
+
+        if (props.IsMiddleButtonPressed)
+        {
+            _isMiddleMousePanning = true;
+            _middlePanStartPoint = point.Position;
+            _middlePanStartOffsetX = NodeEditorControl.OffsetX;
+            _middlePanStartOffsetY = NodeEditorControl.OffsetY;
+            e.Pointer.Capture(NodeEditorControl);
+            e.Handled = true;
+            return;
+        }
+
+        // Block left-button panning on empty canvas.
+        // Allow: clicks on nodes/connectors/connections (they handle their own interaction),
+        //        Shift+left (selection rectangle), Alt+left (connection removal).
+        if (props.IsLeftButtonPressed
+            && !e.KeyModifiers.HasFlag(KeyModifiers.Shift)
+            && !e.KeyModifiers.HasFlag(KeyModifiers.Alt)
+            && !IsSourceOnInteractiveElement(e))
+        {
+            e.Handled = true;
+        }
+    }
+
+    private void OnEditorPointerMovedMiddle(object? sender, PointerEventArgs e)
+    {
+        if (!_isMiddleMousePanning)
+            return;
+
+        if (!e.GetCurrentPoint(NodeEditorControl).Properties.IsMiddleButtonPressed)
+        {
+            _isMiddleMousePanning = false;
+            e.Pointer.Capture(null);
+            return;
+        }
+
+        var delta = e.GetCurrentPoint(NodeEditorControl).Position - _middlePanStartPoint;
+        var newOffsetX = _middlePanStartOffsetX + delta.X;
+        var newOffsetY = _middlePanStartOffsetY + delta.Y;
+
+        // Update both the stored offset and the visual translate transform,
+        // mirroring what NodifyEditor itself does in its OnPointerMoved handler.
+        NodeEditorControl.OffsetX = newOffsetX;
+        NodeEditorControl.ViewTranslateTransform.X = newOffsetX;
+        NodeEditorControl.OffsetY = newOffsetY;
+        NodeEditorControl.ViewTranslateTransform.Y = newOffsetY;
+
+        e.Handled = true;
+    }
+
+    private void OnEditorPointerReleasedMiddle(object? sender, PointerReleasedEventArgs e)
+    {
+        if (!_isMiddleMousePanning)
+            return;
+
+        if (e.GetCurrentPoint(NodeEditorControl).Properties.PointerUpdateKind
+            == PointerUpdateKind.MiddleButtonReleased)
+        {
+            _isMiddleMousePanning = false;
+            e.Pointer.Capture(null);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> when the pointer event originated on a node, connector,
+    /// or connection — i.e. any interactive canvas element that handles its own
+    /// pointer events and should not be suppressed.
+    /// </summary>
+    private static bool IsSourceOnInteractiveElement(PointerEventArgs e)
+    {
+        var visual = e.Source as Visual;
+        while (visual != null)
+        {
+            if (visual is BaseNode or Connector or BaseConnection)
+                return true;
+            visual = visual.GetVisualParent() as Visual;
+        }
+
+        return false;
     }
 
     // ── Gallery drag-start — wired up when the Gallery control is loaded ───

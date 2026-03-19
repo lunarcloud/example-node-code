@@ -256,8 +256,10 @@
 
             <!-- Node editor canvas -->
             <!-- Border provides explicit layout bounds so NodifyEditor's infinite Canvas
-                 is clipped to this Grid column and cannot bleed over adjacent panels. -->
+                 is clipped to this Grid column and cannot bleed over adjacent panels.
+                 The inner Panel holds both the editor and the negative-space overlay. -->
             <Border Grid.Column="0" ClipToBounds="True">
+            <Panel>
             <nodify:NodifyEditor x:Name="NodeEditorControl"
                                  x:CompileBindings="False"
                                  ItemsSource="{Binding Nodes}"
@@ -295,6 +297,24 @@
                     </DataTemplate>
                 </nodify:NodifyEditor.PendingConnectionTemplate>
             </nodify:NodifyEditor>
+
+            <!-- Negative-space overlay: tints the canvas area where x<0 or y<0.
+                 Non-interactive; positioned and sized in code-behind whenever the
+                 viewport pan offset (OffsetX/OffsetY) or the editor bounds change. -->
+            <Canvas x:Name="NegativeSpaceCanvas" IsHitTestVisible="False">
+                <!-- Left strip: covers the visible negative-X area (left of canvas origin) -->
+                <Rectangle x:Name="NegSpaceLeft"
+                           Fill="{DynamicResource NegativeSpaceBrush}"
+                           IsHitTestVisible="False"
+                           IsVisible="False" />
+                <!-- Top strip: covers the visible negative-Y area (above canvas origin,
+                     right of the left strip so they do not double-paint the corner) -->
+                <Rectangle x:Name="NegSpaceTop"
+                           Fill="{DynamicResource NegativeSpaceBrush}"
+                           IsHitTestVisible="False"
+                           IsVisible="False" />
+            </Canvas>
+            </Panel>
             </Border>
 
             <!-- Splitter right - hidden when properties panel is not visible -->

@@ -1,3 +1,4 @@
+using System;
 using Avalonia;
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -18,9 +19,21 @@ public abstract partial class NodeViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasNameError;
 
-    /// <summary>The position of the node on the editor canvas.</summary>
+    /// <summary>The position of the node on the editor canvas. Coordinates are clamped to non-negative values.</summary>
     [ObservableProperty]
     private Point _location;
+
+    /// <summary>Clamps the location so that neither X nor Y can be negative.</summary>
+    partial void OnLocationChanged(Point value)
+    {
+        // Clamp each axis independently; only reassign if something changed.
+        // The generated setter's equality guard ensures the second assignment (when
+        // clamping is needed) does not trigger a third call, so there is no infinite loop.
+        var clampedX = Math.Max(0, value.X);
+        var clampedY = Math.Max(0, value.Y);
+        if (clampedX != value.X || clampedY != value.Y)
+            Location = new Point(clampedX, clampedY);
+    }
 
     /// <summary>True when this node is currently selected in the editor.</summary>
     [ObservableProperty]
