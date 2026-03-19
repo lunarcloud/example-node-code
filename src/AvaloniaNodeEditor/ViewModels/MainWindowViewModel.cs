@@ -107,7 +107,7 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>The node currently held in the in-memory clipboard for paste operations.</summary>
     private NodeViewModel? _clipboardNode;
 
-    /// <summary>Initialises the view model with a single default tab.</summary>
+    /// <summary>Initializes the view model with a single default tab.</summary>
     public MainWindowViewModel()
     {
         var defaultTab = new TabViewModel("Main");

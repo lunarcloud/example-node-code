@@ -20,7 +20,7 @@ public partial class TabViewModel : ViewModelBase
     /// <summary>The collection of connections between nodes on this tab's canvas.</summary>
     public ObservableCollection<ConnectionViewModel> Connections { get; } = [];
 
-    /// <summary>Initialises a new tab with the given display name.</summary>
+    /// <summary>Initializes a new tab with the given display name.</summary>
     public TabViewModel(string name)
     {
         _name = name;

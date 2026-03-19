@@ -71,7 +71,7 @@ public partial class MainWindow : Window
             RoutingStrategies.Bubble,
             handledEventsToo: true);
 
-        // Bubble handler for left-button release: finalises node-drag for undo recording.
+        // Bubble handler for left-button release: finalizes node-drag for undo recording.
         NodeEditorControl.AddHandler(
             InputElement.PointerReleasedEvent,
             OnEditorPointerReleasedLeft,
