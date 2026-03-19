@@ -1,3 +1,4 @@
+using System.Linq;
 using Avalonia;
 using AvaloniaNodeEditor.Models;
 using AvaloniaNodeEditor.ViewModels;
@@ -47,7 +48,7 @@ public class MainWindowViewModelTests
 
         // Assert
         Assert.NotNull(viewModel.ToolboxItems);
-        Assert.Equal(5, viewModel.ToolboxItems.Count);
+        Assert.Equal(6, viewModel.ToolboxItems.Count);
     }
 
     [Fact]
@@ -62,6 +63,7 @@ public class MainWindowViewModelTests
         Assert.Contains("Arithmetic Transform", viewModel.ToolboxItems);
         Assert.Contains("Random Number Generator", viewModel.ToolboxItems);
         Assert.Contains("Pass Filter", viewModel.ToolboxItems);
+        Assert.Contains("Tab Pass", viewModel.ToolboxItems);
     }
 
     [Fact]
@@ -102,8 +104,9 @@ public class MainWindowViewModelTests
             viewModel.AddNodeCommand.Execute(item);
         }
 
-        // Assert
-        Assert.Equal(5, viewModel.Nodes.Count);
+        // Assert — Tab Pass creates 2 nodes (a pair), all others create 1 each,
+        // so 5 single-node types + 1 pair type = 5 + 2 = 7 nodes total.
+        Assert.Equal(7, viewModel.Nodes.Count);
     }
 
     [Fact]
@@ -1571,5 +1574,230 @@ public class MainWindowViewModelTests
         Assert.Empty(sourceTab.Nodes);
         Assert.Single(targetTab.Nodes);
         Assert.Same(node, targetTab.Nodes[0]);
+    }
+
+    // ── Tab Pass ────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void AddNodeAt_TabPass_CreatesTwoLinkedNodes()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+
+        // Act
+        viewModel.AddNodeAt("Tab Pass", new Point(100, 100));
+
+        // Assert — two nodes created
+        Assert.Equal(2, viewModel.Nodes.Count);
+    }
+
+    [Fact]
+    public void AddNodeAt_TabPass_NodeTypeIsTabPass()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(100, 100));
+
+        Assert.Equal("Tab Pass", viewModel.Nodes[0].NodeType);
+        Assert.Equal("Tab Pass", viewModel.Nodes[1].NodeType);
+    }
+
+    [Fact]
+    public void AddNodeAt_TabPass_NodesAreLinkedAsPair()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(100, 100));
+
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+
+        Assert.Same(node1.Pair, node2);
+        Assert.Same(node2.Pair, node1);
+    }
+
+    [Fact]
+    public void AddNodeAt_TabPass_SharesSamePairId()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+
+        Assert.Equal(node1.PairId, node2.PairId);
+    }
+
+    [Fact]
+    public void AddNodeAt_TabPass_DefaultSlotsAreMirrored()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+
+        // node1 has input "In 1" → node2 has output "In 1"
+        Assert.Contains(node1.Inputs, c => c.Name == "In 1");
+        Assert.Contains(node2.Outputs, c => c.Name == "In 1");
+
+        // node1 has output "Out 1" → node2 has input "Out 1"
+        Assert.Contains(node1.Outputs, c => c.Name == "Out 1");
+        Assert.Contains(node2.Inputs, c => c.Name == "Out 1");
+    }
+
+    [Fact]
+    public void AddNodeAt_TabPass_UndoRemovesBothNodes()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+        Assert.Equal(2, viewModel.Nodes.Count);
+
+        viewModel.UndoCommand.Execute(null);
+
+        Assert.Empty(viewModel.Nodes);
+    }
+
+    [Fact]
+    public void AddTabPassInputSlotCommand_AddsInputToNodeAndOutputToPair()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+        int initialInputCount = node1.Inputs.Count;
+
+        viewModel.AddTabPassInputSlotCommand.Execute(node1);
+
+        Assert.Equal(initialInputCount + 1, node1.Inputs.Count);
+        Assert.Equal(node1.Inputs.Count, node2.Outputs.Count);
+    }
+
+    [Fact]
+    public void AddTabPassOutputSlotCommand_AddsOutputToNodeAndInputToPair()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+        int initialOutputCount = node1.Outputs.Count;
+
+        viewModel.AddTabPassOutputSlotCommand.Execute(node1);
+
+        Assert.Equal(initialOutputCount + 1, node1.Outputs.Count);
+        Assert.Equal(node1.Outputs.Count, node2.Inputs.Count);
+    }
+
+    [Fact]
+    public void RemoveTabPassSlotCommand_RemovesSlotFromBothNodes()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+
+        // Remove the first slot from node1
+        var slot = node1.ConnectorSlots[0];
+        viewModel.RemoveTabPassSlotCommand.Execute(slot);
+
+        Assert.DoesNotContain(node1.ConnectorSlots, s => s.Name == slot.Name && s.IsInput == slot.IsInput);
+        Assert.DoesNotContain(node2.ConnectorSlots, s => s.Name == slot.Name && s.IsInput != slot.IsInput);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_TabPassNode_RestoresPairLink()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(50, 50));
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+        var pairId = node1.PairId;
+
+        var json = viewModel.SerializeGraph();
+
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        Assert.Equal(2, viewModel2.Nodes.Count);
+        var restored1 = (TabPassNode)viewModel2.Nodes[0];
+        var restored2 = (TabPassNode)viewModel2.Nodes[1];
+
+        Assert.Equal(pairId, restored1.PairId);
+        Assert.Equal(pairId, restored2.PairId);
+        Assert.NotNull(restored1.Pair);
+        Assert.NotNull(restored2.Pair);
+        Assert.Same(restored1.Pair, restored2);
+        Assert.Same(restored2.Pair, restored1);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_TabPassNode_RestoresConnectorSlots()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        viewModel.AddTabPassInputSlotCommand.Execute(node1);  // add "In 2"
+
+        var json = viewModel.SerializeGraph();
+
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        var restored1 = (TabPassNode)viewModel2.Nodes.First(n => n.NodeType == "Tab Pass" && ((TabPassNode)n).Inputs.Count == 2);
+        Assert.Equal(3, restored1.ConnectorSlots.Count);  // In 1, In 2, Out 1
+    }
+
+    [Fact]
+    public void AddTabPassInputSlot_Undo_RemovesSlotFromBothNodes()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+        int slotCountBefore = node1.ConnectorSlots.Count;
+
+        viewModel.AddTabPassInputSlotCommand.Execute(node1);
+        Assert.Equal(slotCountBefore + 1, node1.ConnectorSlots.Count);
+
+        viewModel.UndoCommand.Execute(null);
+
+        Assert.Equal(slotCountBefore, node1.ConnectorSlots.Count);
+        Assert.Equal(node1.Inputs.Count, node2.Outputs.Count);
+    }
+
+    [Fact]
+    public void RemoveTabPassSlot_Undo_RestoresSlotToBothNodes()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+        var node2 = (TabPassNode)viewModel.Nodes[1];
+        int slotCountBefore = node1.ConnectorSlots.Count;
+
+        var slot = node1.ConnectorSlots[0];
+        viewModel.RemoveTabPassSlotCommand.Execute(slot);
+        Assert.Equal(slotCountBefore - 1, node1.ConnectorSlots.Count);
+
+        viewModel.UndoCommand.Execute(null);
+
+        Assert.Equal(slotCountBefore, node1.ConnectorSlots.Count);
+    }
+
+    [Fact]
+    public void AddTabPassInputSlot_UndoDoesNotGrowUndoStack()
+    {
+        // Guard against the undo/redo recursion bug: undoing an Add should not re-record a Remove.
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Tab Pass", new Point(0, 0));
+        var node1 = (TabPassNode)viewModel.Nodes[0];
+
+        viewModel.AddTabPassInputSlotCommand.Execute(node1);
+        Assert.True(viewModel.CanUndo);
+
+        viewModel.UndoCommand.Execute(null);
+
+        // After undoing the add, there should be nothing left to undo (only the pair creation was
+        // before the add, and that was already popped).
+        Assert.True(viewModel.CanUndo);  // pair creation is still on the stack
+        Assert.False(viewModel.CanRedo == false);  // redo should be available
+        Assert.True(viewModel.CanRedo);
     }
 }

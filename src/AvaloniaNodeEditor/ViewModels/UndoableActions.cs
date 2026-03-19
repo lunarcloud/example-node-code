@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Avalonia;
+using AvaloniaNodeEditor.Models;
 
 namespace AvaloniaNodeEditor.ViewModels;
 
@@ -442,4 +443,110 @@ internal sealed class RenameTabAction : IUndoableAction
     public void Undo() => _tab.Name = _oldName;
 
     public void Redo() => _tab.Name = _newName;
+}
+
+// ── Tab-Pass node actions ─────────────────────────────────────────────────────
+
+/// <summary>Records the creation of a linked Tab-Pass pair (two nodes added simultaneously).</summary>
+internal sealed class AddTabPassPairAction : IUndoableAction
+{
+    private readonly MainWindowViewModel _vm;
+    private readonly TabViewModel _tab;
+    private readonly TabPassNode _node1;
+    private readonly TabPassNode _node2;
+
+    public AddTabPassPairAction(
+        MainWindowViewModel vm, TabViewModel tab, TabPassNode node1, TabPassNode node2)
+    {
+        _vm = vm;
+        _tab = tab;
+        _node1 = node1;
+        _node2 = node2;
+    }
+
+    public void Undo()
+    {
+        foreach (var node in new[] { _node1, _node2 })
+        {
+            var toRemove = _tab.Connections
+                .Where(c => node.Inputs.Contains(c.Target) || node.Outputs.Contains(c.Source))
+                .ToList();
+
+            foreach (var conn in toRemove)
+            {
+                _tab.Connections.Remove(conn);
+                ConnectorHelper.UpdateIsConnected(_tab, conn.Source);
+                ConnectorHelper.UpdateIsConnected(_tab, conn.Target);
+            }
+
+            _tab.Nodes.Remove(node);
+        }
+
+        if (_vm.SelectedNode == _node1 || _vm.SelectedNode == _node2)
+            _vm.SelectedNode = null;
+
+        _vm.ValidateNodeNamesInTab(_tab);
+    }
+
+    public void Redo()
+    {
+        _tab.Nodes.Add(_node1);
+        _tab.Nodes.Add(_node2);
+        _vm.SelectedNode = _node1;
+        _vm.ValidateNodeNamesInTab(_tab);
+    }
+}
+
+/// <summary>Records adding a connector slot to a Tab-Pass node (and its mirrored slot on the sibling).</summary>
+internal sealed class AddTabPassSlotAction : IUndoableAction
+{
+    private readonly MainWindowViewModel _vm;
+    private readonly TabPassNode _node;
+    private readonly string _slotName;
+    private readonly bool _isInput;
+
+    public AddTabPassSlotAction(
+        MainWindowViewModel vm, TabPassNode node, string slotName, bool isInput)
+    {
+        _vm = vm;
+        _node = node;
+        _slotName = slotName;
+        _isInput = isInput;
+    }
+
+    public void Undo()
+    {
+        var slot = _node.ConnectorSlots.FirstOrDefault(s => s.Name == _slotName && s.IsInput == _isInput);
+        if (slot is not null)
+            _vm.RemoveTabPassSlotCore(_node, slot);
+    }
+
+    public void Redo() => _node.AddConnectorSlot(_slotName, _isInput);
+}
+
+/// <summary>Records removing a connector slot from a Tab-Pass node (and its mirrored slot on the sibling).</summary>
+internal sealed class RemoveTabPassSlotAction : IUndoableAction
+{
+    private readonly MainWindowViewModel _vm;
+    private readonly TabPassNode _node;
+    private readonly string _slotName;
+    private readonly bool _isInput;
+
+    public RemoveTabPassSlotAction(
+        MainWindowViewModel vm, TabPassNode node, string slotName, bool isInput)
+    {
+        _vm = vm;
+        _node = node;
+        _slotName = slotName;
+        _isInput = isInput;
+    }
+
+    public void Undo() => _node.AddConnectorSlot(_slotName, _isInput);
+
+    public void Redo()
+    {
+        var slot = _node.ConnectorSlots.FirstOrDefault(s => s.Name == _slotName && s.IsInput == _isInput);
+        if (slot is not null)
+            _vm.RemoveTabPassSlotCore(_node, slot);
+    }
 }

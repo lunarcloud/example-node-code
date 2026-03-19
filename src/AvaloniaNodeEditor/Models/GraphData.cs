@@ -113,6 +113,24 @@ public class NodeData
     /// <summary>Upper threshold for Pass Filter nodes.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public double? UpperThreshold { get; set; }
+
+    /// <summary>Pair identifier for Tab Pass nodes (shared between the two sibling nodes).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? PairId { get; set; }
+
+    /// <summary>Connector slot definitions for Tab Pass nodes.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<SlotData>? Slots { get; set; }
+}
+
+/// <summary>Data transfer object representing a connector slot in a Tab Pass node.</summary>
+public class SlotData
+{
+    /// <summary>The display name of the connector slot.</summary>
+    public string Name { get; set; } = string.Empty;
+
+    /// <summary>Whether this slot is an input on its owner node.</summary>
+    public bool IsInput { get; set; }
 }
 
 /// <summary>Data transfer object representing a connection between two node connectors for serialization.</summary>
