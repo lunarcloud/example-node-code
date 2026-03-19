@@ -40,6 +40,7 @@
         <KeyBinding Gesture="Ctrl+N" Command="{Binding NewGraphCommand}"/>
         <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}"/>
         <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}"/>
+        <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}"/>
         <KeyBinding Gesture="Ctrl+C" Command="{Binding CopyNodeCommand}"/>
         <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteNodeCommand}"/>
         <KeyBinding Gesture="Delete" Command="{Binding DeleteNodeCommand}"/>
