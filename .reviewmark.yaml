@@ -1,0 +1,43 @@
+---
+# ReviewMark Configuration File
+# This file defines which files require review, where the evidence store is located,
+# and how files are grouped into named review-sets.
+
+# Patterns identifying all files that require review.
+# Processed in order; prefix a pattern with '!' to exclude.
+needs-review:
+  - "**/*.cs"
+  - "!**/obj/**"
+
+# Evidence source: review data and index.json are located in the 'reviews' branch
+# of this repository, accessed through the GitHub public HTTPS raw content access.
+# Note: The 'reviews' branch must be created and populated with review evidence PDFs
+# and an index.json before enforcement (--enforce flag) can be enabled in the pipeline.
+evidence-source:
+  type: url
+  location: https://raw.githubusercontent.com/lunarcloud/example-node-code/reviews/index.json
+
+# Review sets grouping files by logical unit of review.
+reviews:
+  - id: ANE-Models-Review
+    title: Review of Avalonia Node Editor Models
+    paths:
+      - "src/**/Models/*.cs"
+
+  - id: ANE-ViewModels-Review
+    title: Review of Avalonia Node Editor ViewModels
+    paths:
+      - "src/**/ViewModels/*.cs"
+
+  - id: ANE-Views-Review
+    title: Review of Avalonia Node Editor Views
+    paths:
+      - "src/**/Views/*.cs"
+      - "src/**/App.axaml.cs"
+      - "src/**/Program.cs"
+      - "src/**/ViewLocator.cs"
+
+  - id: ANE-Tests-Review
+    title: Review of Avalonia Node Editor Tests
+    paths:
+      - "tests/**/*.cs"
