@@ -237,7 +237,8 @@ public partial class MainWindow : Window
         _galleryDragStart = e.GetPosition(null);
         // SelectedItem is already updated because GalleryItem (ListBoxItem) marks
         // PointerPressed as handled (completing its own selection) before this fires.
-        if (NodeGallery?.SelectedItem is Control selectedItem)
+        // Use sender (the gallery that registered the handler) to support multiple galleries.
+        if (sender is ListBox gallery && gallery.SelectedItem is Control selectedItem)
         {
             _galleryDragNodeType = selectedItem.Tag as string;
         }

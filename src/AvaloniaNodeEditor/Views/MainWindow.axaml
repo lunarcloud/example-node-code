@@ -175,12 +175,12 @@
                 <!-- Nodes tab replaces the toolbox side panel; drag items to the canvas -->
                 <ribbon:RibbonTab Header="Nodes">
                     <ribbon:RibbonTab.Groups>
-                        <ribbon:RibbonGroupBox Header="Drag to canvas">
+                        <!-- Sources: nodes that produce/generate data -->
+                        <ribbon:RibbonGroupBox Header="Sources">
                             <!-- Gallery extends ListBox; GalleryItem extends ListBoxItem.
                                  Loaded event is used to wire drag handlers safely after
                                  the ribbon tab content is instantiated. -->
-                            <ribbon:Gallery x:Name="NodeGallery"
-                                            Size="Large"
+                            <ribbon:Gallery Size="Large"
                                             Loaded="OnNodeGalleryLoaded">
                                 <ribbon:GalleryItem Content="Number Producer"
                                                     Tag="Number Producer"
@@ -193,6 +193,23 @@
                                         </Border>
                                     </ribbon:GalleryItem.LargeIcon>
                                 </ribbon:GalleryItem>
+                                <ribbon:GalleryItem Content="Random Number Gen."
+                                                    Tag="Random Number Generator"
+                                                    ToolTip.Tip="Random Number Generator — drag to canvas">
+                                    <ribbon:GalleryItem.LargeIcon>
+                                        <Border Width="32" Height="32" Background="#E67E22" CornerRadius="4">
+                                            <TextBlock Text="RNG" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       FontSize="11" FontWeight="Bold"/>
+                                        </Border>
+                                    </ribbon:GalleryItem.LargeIcon>
+                                </ribbon:GalleryItem>
+                            </ribbon:Gallery>
+                        </ribbon:RibbonGroupBox>
+                        <!-- Reporters: nodes that display/output data -->
+                        <ribbon:RibbonGroupBox Header="Reporters">
+                            <ribbon:Gallery Size="Large"
+                                            Loaded="OnNodeGalleryLoaded">
                                 <ribbon:GalleryItem Content="Number Reporter"
                                                     Tag="Number Reporter"
                                                     ToolTip.Tip="Number Reporter — drag to canvas">
@@ -204,23 +221,18 @@
                                         </Border>
                                     </ribbon:GalleryItem.LargeIcon>
                                 </ribbon:GalleryItem>
+                            </ribbon:Gallery>
+                        </ribbon:RibbonGroupBox>
+                        <!-- Processors: nodes that transform/filter data -->
+                        <ribbon:RibbonGroupBox Header="Processors">
+                            <ribbon:Gallery Size="Large"
+                                            Loaded="OnNodeGalleryLoaded">
                                 <ribbon:GalleryItem Content="Arithmetic Transform"
                                                     Tag="Arithmetic Transform"
                                                     ToolTip.Tip="Arithmetic Transform — drag to canvas">
                                     <ribbon:GalleryItem.LargeIcon>
                                         <Border Width="32" Height="32" Background="#9B59B6" CornerRadius="4">
                                             <TextBlock Text="AT" Foreground="White"
-                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                       FontSize="11" FontWeight="Bold"/>
-                                        </Border>
-                                    </ribbon:GalleryItem.LargeIcon>
-                                </ribbon:GalleryItem>
-                                <ribbon:GalleryItem Content="Random Number Gen."
-                                                    Tag="Random Number Generator"
-                                                    ToolTip.Tip="Random Number Generator — drag to canvas">
-                                    <ribbon:GalleryItem.LargeIcon>
-                                        <Border Width="32" Height="32" Background="#E67E22" CornerRadius="4">
-                                            <TextBlock Text="RNG" Foreground="White"
                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                                        FontSize="11" FontWeight="Bold"/>
                                         </Border>
