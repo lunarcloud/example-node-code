@@ -1,0 +1,13 @@
+---
+title: Avalonia Node Editor Code Quality Report
+subtitle: Code Quality Analysis Report
+author: DEMA Consulting
+description: Code Quality Analysis Report for Avalonia Node Editor
+lang: en-US
+keywords:
+  - Avalonia Node Editor
+  - Code Quality
+  - Analysis
+  - .NET
+  - Documentation
+---

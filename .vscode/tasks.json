@@ -102,6 +102,8 @@
         "reqstream",
         "--requirements",
         "requirements.yaml",
+        "--tests",
+        "\"test-results/**/*.trx\"",
         "--enforce"
       ],
       "problemMatcher": [],

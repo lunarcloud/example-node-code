@@ -1,0 +1,13 @@
+---
+title: Avalonia Node Editor Requirements
+subtitle: Requirements Specification for the Avalonia Node Editor
+author: DEMA Consulting
+description: Requirements Specification for the Avalonia Node Editor
+lang: en-US
+keywords:
+  - Avalonia Node Editor
+  - Requirements
+  - Specification
+  - .NET
+  - Desktop Application
+---

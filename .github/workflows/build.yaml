@@ -10,31 +10,67 @@ on:
         required: true
 
 jobs:
+  # Performs quick quality checks for project formatting consistency including
+  # markdown linting, spell checking, and YAML validation.
   quality-checks:
     name: Quality Checks
     runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
+      # === INSTALL DEPENDENCIES ===
+      # This section installs all required dependencies for quality checks.
+
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Run markdown linter
-        uses: DavidAnson/markdownlint-cli2-action@v22
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v5
         with:
-          globs: '**/*.md'
+          dotnet-version: 10.x
 
-      - name: Run spell checker
-        uses: streetsidesoftware/cspell-action@v8
+      - name: Restore Tools
+        run: >
+          dotnet tool restore
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          files: '**/*.{md,cs}'
-          incremental_files_only: false
+          node-version: 24.x
 
-      - name: Run YAML linter
-        uses: ibiqlik/action-yamllint@v3
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          config_file: .yamllint.yaml
+          python-version: '3.14'
 
+      - name: Capture tool versions
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          echo "Capturing tool versions..."
+          dotnet versionmark --capture --job-id "quality" \
+            --output "artifacts/versionmark-quality.json" -- \
+            dotnet git versionmark
+          echo "✓ Tool versions captured"
+
+      # === CAPTURE OTS SELF-VALIDATION RESULTS ===
+
+      - name: Run VersionMark self-validation
+        run: dotnet versionmark --validate --results artifacts/versionmark-self-validation-quality.trx
+
+      # === RUN QUALITY CHECKS ===
+
+      - name: Run linters
+        shell: bash
+        run: bash ./lint.sh
+
+      - name: Upload quality artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: artifacts-quality
+          path: artifacts/
+
+  # Builds and unit-tests the project on supported operating systems.
   build:
     name: Build ${{ matrix.os }}
     needs: quality-checks
@@ -49,6 +85,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+
+      # === INSTALL DEPENDENCIES ===
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -66,6 +104,27 @@ jobs:
       - name: Restore Tools
         run: >
           dotnet tool restore
+
+      # === CAPTURE TOOL VERSIONS ===
+
+      - name: Capture tool versions
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          echo "Capturing tool versions..."
+          OS_SHORT=$(echo "${{ matrix.os }}" | sed 's/-latest//')
+          JOB_ID="build-${OS_SHORT}"
+          dotnet versionmark --capture --job-id "${JOB_ID}" \
+            --output "artifacts/versionmark-${JOB_ID}.json" -- \
+            dotnet git dotnet-sonarscanner versionmark
+          echo "✓ Tool versions captured"
+
+      # === CAPTURE OTS SELF-VALIDATION RESULTS ===
+
+      - name: Run VersionMark self-validation
+        run: dotnet versionmark --validate --results artifacts/versionmark-self-validation-${{ matrix.os }}.trx
+
+      # === BUILD AND TEST ===
 
       - name: Restore Dependencies
         run: >
@@ -100,7 +159,7 @@ jobs:
           --property:Version=${{ inputs.version }}
           --collect "XPlat Code Coverage;Format=opencover"
           --logger "trx;LogFilePrefix=${{ matrix.os }}"
-          --results-directory test-results
+          --results-directory artifacts
 
       - name: End Sonar Scanner
         if: false  # Disabled for now - add SonarCloud configuration when needed
@@ -119,22 +178,24 @@ jobs:
           --no-restore
           --property:PackageVersion=${{ inputs.version }}
 
-      - name: Upload Test Results
+      # === UPLOAD ARTIFACTS ===
+
+      - name: Upload build artifacts
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: test-results-${{ matrix.os }}
-          path: test-results/*.trx
-          retention-days: 5
+          name: artifacts-build-${{ matrix.os }}
+          path: artifacts/
 
-      - name: Upload Artifacts
+      - name: Upload application
         uses: actions/upload-artifact@v7
         with:
-          name: artifacts-${{ matrix.os }}
+          name: packages-${{ matrix.os }}
           path: |
             src/AvaloniaNodeEditor/bin/Release/net10.0/
-          retention-days: 5
 
+  # Runs CodeQL security and quality analysis, gathering results to include
+  # in the code quality report.
   codeql:
     name: CodeQL Analysis
     runs-on: ubuntu-latest
@@ -145,6 +206,8 @@ jobs:
       security-events: write
 
     steps:
+      # === INSTALL DEPENDENCIES ===
+
       - name: Checkout
         uses: actions/checkout@v6
         with:
@@ -154,6 +217,7 @@ jobs:
         uses: github/codeql-action/init@v4
         with:
           languages: csharp
+          build-mode: manual
           queries: security-and-quality
           config-file: ./.github/codeql-config.yml
 
@@ -165,9 +229,15 @@ jobs:
             9.x
             10.x
 
+      - name: Restore Tools
+        run: >
+          dotnet tool restore
+
       - name: Restore Dependencies
         run: >
           dotnet restore
+
+      # === BUILD AND ANALYZE ===
 
       - name: Build
         run: >
@@ -180,15 +250,16 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:csharp"
-          output: sarif-results
+          output: artifacts
+          upload: false
 
-      - name: Upload CodeQL SARIF
+      # === UPLOAD ARTIFACTS ===
+
+      - name: Upload CodeQL artifacts
         uses: actions/upload-artifact@v7
-        continue-on-error: true
         with:
-          name: codeql-sarif
-          path: sarif-results/csharp.sarif
-          retention-days: 5
+          name: artifacts-codeql
+          path: artifacts/
 
   integration-test:
     name: Integration Test ${{ matrix.os }} .NET ${{ matrix.dotnet-version }}
@@ -207,7 +278,7 @@ jobs:
       - name: Download package
         uses: actions/download-artifact@v8
         with:
-          name: artifacts-${{ matrix.os }}
+          name: packages-${{ matrix.os }}
           path: packages
 
       - name: Setup dotnet
@@ -253,41 +324,36 @@ jobs:
           name: integration-test-results-${{ matrix.os }}-dotnet${{ matrix.dotnet-version }}
           path: integration-test-${{ matrix.os }}-dotnet${{ matrix.dotnet-version }}.trx
 
+  # Builds the supporting documentation including user guides, requirements,
+  # trace matrices, code quality reports, and build notes.
   build-docs:
-    name: Build Documentation
-    if: false  # Disabled for now - enable when documentation structure is added
+    name: Build Documents
+    if: false  # Disabled for now - enable when documentation structure is ready
     runs-on: windows-latest
     needs: [build, codeql]
     permissions:
       contents: read
 
     steps:
+      # === CHECKOUT AND DOWNLOAD ARTIFACTS ===
+
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Download all job artifacts
+        uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          pattern: 'artifacts-*'
+          merge-multiple: true
+        continue-on-error: true
+
+      # === INSTALL DEPENDENCIES ===
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
-
-      - name: Download all test results
-        uses: actions/download-artifact@v8
-        with:
-          path: test-results
-          pattern: '*test-results*'
-        continue-on-error: true
-
-      - name: Download TemplateTool package
-        uses: actions/download-artifact@v8
-        with:
-          name: artifacts-windows-latest
-          path: packages
-
-      - name: Download CodeQL SARIF
-        uses: actions/download-artifact@v8
-        with:
-          name: codeql-sarif
-          path: codeql-results
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v5
@@ -297,23 +363,48 @@ jobs:
       - name: Install npm dependencies
         run: npm install
 
-      - name: Install TemplateTool from package
-        shell: bash
-        run: |
-          echo "Installing TemplateTool version ${{ inputs.version }}"
-          dotnet tool install --global \
-            --add-source packages \
-            --version ${{ inputs.version }} \
-            AvaloniaNodeEditor
-
       - name: Restore Tools
         run: dotnet tool restore
+
+      # === CAPTURE TOOL VERSIONS ===
+
+      - name: Capture tool versions for build-docs
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          echo "Capturing tool versions..."
+          dotnet versionmark --capture --job-id "build-docs" \
+            --output "artifacts/versionmark-build-docs.json" -- \
+            dotnet git node npm pandoc weasyprint sarifmark sonarmark reqstream buildmark versionmark reviewmark
+          echo "✓ Tool versions captured"
+
+      # === CAPTURE OTS SELF-VALIDATION RESULTS ===
+
+      - name: Run ReqStream self-validation
+        run: dotnet reqstream --validate --results artifacts/reqstream-self-validation.trx
+
+      - name: Run BuildMark self-validation
+        run: dotnet buildmark --validate --results artifacts/buildmark-self-validation.trx
+
+      - name: Run VersionMark self-validation
+        run: dotnet versionmark --validate --results artifacts/versionmark-self-validation.trx
+
+      - name: Run SarifMark self-validation
+        run: dotnet sarifmark --validate --results artifacts/sarifmark-self-validation.trx
+
+      - name: Run SonarMark self-validation
+        run: dotnet sonarmark --validate --results artifacts/sonarmark-self-validation.trx
+
+      - name: Run ReviewMark self-validation
+        run: dotnet reviewmark --validate --results artifacts/reviewmark-self-validation.trx
+
+      # === GENERATE MARKDOWN REPORTS ===
 
       - name: Generate Requirements Report, Justifications, and Trace Matrix
         run: >
           dotnet reqstream
           --requirements requirements.yaml
-          --tests "test-results/**/*.trx"
+          --tests "artifacts/**/*.trx"
           --report docs/requirements/requirements.md
           --justifications docs/justifications/justifications.md
           --matrix docs/tracematrix/tracematrix.md
@@ -321,10 +412,10 @@ jobs:
 
       - name: Generate CodeQL Quality Report with SarifMark
         run: >
-          sarifmark
-          --sarif codeql-results/csharp.sarif
+          dotnet sarifmark
+          --sarif artifacts/csharp.sarif
           --report docs/quality/codeql-quality.md
-          --heading "Template DotNet Tool CodeQL Analysis"
+          --heading "Avalonia Node Editor CodeQL Analysis"
           --report-depth 1
 
       - name: Display CodeQL Quality Report
@@ -334,13 +425,14 @@ jobs:
           cat docs/quality/codeql-quality.md
 
       - name: Generate SonarCloud Quality Report
+        if: false  # Disabled for now - add SonarCloud configuration when needed
         shell: bash
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: >
           dotnet sonarmark
           --server https://sonarcloud.io
-          --project-key demaconsulting_TemplateDotNetTool
+          --project-key lunarcloud_example-node-code
           --branch ${{ github.ref_name }}
           --token "$SONAR_TOKEN"
           --report docs/quality/sonar-quality.md
@@ -356,6 +448,28 @@ jobs:
           --report docs/buildnotes.md
           --report-depth 1
 
+      - name: Display Build Notes Report
+        shell: bash
+        run: |
+          echo "=== Build Notes Report ==="
+          cat docs/buildnotes.md
+
+      - name: Publish Tool Versions
+        shell: bash
+        run: |
+          echo "Publishing tool versions..."
+          dotnet versionmark --publish --report docs/buildnotes/versions.md --report-depth 1 \
+            -- "artifacts/**/versionmark-*.json"
+          echo "✓ Tool versions published"
+
+      - name: Display Tool Versions Report
+        shell: bash
+        run: |
+          echo "=== Tool Versions Report ==="
+          cat docs/buildnotes/versions.md
+
+      # === GENERATE HTML DOCUMENTS WITH PANDOC ===
+
       - name: Generate Build Notes HTML with Pandoc
         shell: bash
         run: >
@@ -365,13 +479,6 @@ jobs:
           --metadata version="${{ inputs.version }}"
           --metadata date="$(date +'%Y-%m-%d')"
           --output docs/buildnotes/buildnotes.html
-
-      - name: Generate Build Notes PDF with Weasyprint
-        run: >
-          dotnet weasyprint
-          --pdf-variant pdf/a-3u
-          docs/buildnotes/buildnotes.html
-          "docs/TemplateDotNetTool Build Notes.pdf"
 
       - name: Generate Guide HTML with Pandoc
         shell: bash
@@ -383,13 +490,6 @@ jobs:
           --metadata date="$(date +'%Y-%m-%d')"
           --output docs/guide/guide.html
 
-      - name: Generate Guide PDF with Weasyprint
-        run: >
-          dotnet weasyprint
-          --pdf-variant pdf/a-3u
-          docs/guide/guide.html
-          "docs/TemplateDotNetTool User Guide.pdf"
-
       - name: Generate Code Quality HTML with Pandoc
         shell: bash
         run: >
@@ -399,13 +499,6 @@ jobs:
           --metadata version="${{ inputs.version }}"
           --metadata date="$(date +'%Y-%m-%d')"
           --output docs/quality/quality.html
-
-      - name: Generate Code Quality PDF with Weasyprint
-        run: >
-          dotnet weasyprint
-          --pdf-variant pdf/a-3u
-          docs/quality/quality.html
-          "docs/TemplateDotNetTool Code Quality.pdf"
 
       - name: Generate Requirements HTML with Pandoc
         shell: bash
@@ -417,13 +510,6 @@ jobs:
           --metadata date="$(date +'%Y-%m-%d')"
           --output docs/requirements/requirements.html
 
-      - name: Generate Requirements PDF with Weasyprint
-        run: >
-          dotnet weasyprint
-          --pdf-variant pdf/a-3u
-          docs/requirements/requirements.html
-          "docs/TemplateDotNetTool Requirements.pdf"
-
       - name: Generate Requirements Justifications HTML with Pandoc
         shell: bash
         run: >
@@ -433,13 +519,6 @@ jobs:
           --metadata version="${{ inputs.version }}"
           --metadata date="$(date +'%Y-%m-%d')"
           --output docs/justifications/justifications.html
-
-      - name: Generate Requirements Justifications PDF with Weasyprint
-        run: >
-          dotnet weasyprint
-          --pdf-variant pdf/a-3u
-          docs/justifications/justifications.html
-          "docs/TemplateDotNetTool Requirements Justifications.pdf"
 
       - name: Generate Trace Matrix HTML with Pandoc
         shell: bash
@@ -451,17 +530,90 @@ jobs:
           --metadata date="$(date +'%Y-%m-%d')"
           --output docs/tracematrix/tracematrix.html
 
+      - name: Generate Review Plan HTML with Pandoc
+        shell: bash
+        run: >
+          dotnet pandoc
+          --defaults docs/reviewplan/definition.yaml
+          --filter node_modules/.bin/mermaid-filter.cmd
+          --metadata version="${{ inputs.version }}"
+          --metadata date="$(date +'%Y-%m-%d')"
+          --output docs/reviewplan/review-plan.html
+
+      - name: Generate Review Report HTML with Pandoc
+        shell: bash
+        run: >
+          dotnet pandoc
+          --defaults docs/reviewreport/definition.yaml
+          --filter node_modules/.bin/mermaid-filter.cmd
+          --metadata version="${{ inputs.version }}"
+          --metadata date="$(date +'%Y-%m-%d')"
+          --output docs/reviewreport/review-report.html
+
+      # === GENERATE PDF DOCUMENTS WITH WEASYPRINT ===
+
+      - name: Generate Build Notes PDF with Weasyprint
+        run: >
+          dotnet weasyprint
+          --pdf-variant pdf/a-3u
+          docs/buildnotes/buildnotes.html
+          "docs/AvaloniaNodeEditor Build Notes.pdf"
+
+      - name: Generate Guide PDF with Weasyprint
+        run: >
+          dotnet weasyprint
+          --pdf-variant pdf/a-3u
+          docs/guide/guide.html
+          "docs/AvaloniaNodeEditor User Guide.pdf"
+
+      - name: Generate Code Quality PDF with Weasyprint
+        run: >
+          dotnet weasyprint
+          --pdf-variant pdf/a-3u
+          docs/quality/quality.html
+          "docs/AvaloniaNodeEditor Code Quality.pdf"
+
+      - name: Generate Requirements PDF with Weasyprint
+        run: >
+          dotnet weasyprint
+          --pdf-variant pdf/a-3u
+          docs/requirements/requirements.html
+          "docs/AvaloniaNodeEditor Requirements.pdf"
+
+      - name: Generate Requirements Justifications PDF with Weasyprint
+        run: >
+          dotnet weasyprint
+          --pdf-variant pdf/a-3u
+          docs/justifications/justifications.html
+          "docs/AvaloniaNodeEditor Requirements Justifications.pdf"
+
       - name: Generate Trace Matrix PDF with Weasyprint
         run: >
           dotnet weasyprint
           --pdf-variant pdf/a-3u
           docs/tracematrix/tracematrix.html
-          "docs/TemplateDotNetTool Trace Matrix.pdf"
+          "docs/AvaloniaNodeEditor Trace Matrix.pdf"
+
+      - name: Generate Review Plan PDF with Weasyprint
+        run: >
+          dotnet weasyprint
+          --pdf-variant pdf/a-3u
+          docs/reviewplan/review-plan.html
+          "docs/AvaloniaNodeEditor Review Plan.pdf"
+
+      - name: Generate Review Report PDF with Weasyprint
+        run: >
+          dotnet weasyprint
+          --pdf-variant pdf/a-3u
+          docs/reviewreport/review-report.html
+          "docs/AvaloniaNodeEditor Review Report.pdf"
+
+      # === UPLOAD ARTIFACTS ===
 
       - name: Upload documentation
         uses: actions/upload-artifact@v7
         with:
-          name: documentation
+          name: documents
           path: |
             docs/*.pdf
             docs/buildnotes.md

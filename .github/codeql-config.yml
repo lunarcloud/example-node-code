@@ -1,13 +1,8 @@
 ---
-# CodeQL configuration for Template DotNet Tool
+# CodeQL configuration for Avalonia Node Editor
 # Suppresses intentional generic catch clauses
 
-name: "Template DotNet Tool CodeQL Config"
+name: "Avalonia Node Editor CodeQL Config"
 
 # Query filters to disable specific queries for certain paths
-query-filters:
-  - exclude:
-      id: cs/catch-of-all-exceptions
-    paths:
-      - src/DemaConsulting.TemplateDotNetTool/Context.cs
-      - src/DemaConsulting.TemplateDotNetTool/Validation.cs
+query-filters: []
