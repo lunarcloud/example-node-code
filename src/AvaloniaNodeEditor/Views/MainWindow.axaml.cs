@@ -199,7 +199,10 @@ public partial class MainWindow : Window
         while (visual is not null)
         {
             if (visual is BaseNode nodeControl && nodeControl.DataContext is NodeViewModel nodeVm)
+            {
                 return nodeVm;
+            }
+
             visual = visual.GetVisualParent() as Visual;
         }
 
@@ -209,7 +212,9 @@ public partial class MainWindow : Window
     private void OnEditorPointerMovedMiddle(object? sender, PointerEventArgs e)
     {
         if (!_isMiddleMousePanning)
+        {
             return;
+        }
 
         if (!e.GetCurrentPoint(NodeEditorControl).Properties.IsMiddleButtonPressed)
         {
@@ -235,7 +240,9 @@ public partial class MainWindow : Window
     private void OnEditorPointerReleasedMiddle(object? sender, PointerReleasedEventArgs e)
     {
         if (!_isMiddleMousePanning)
+        {
             return;
+        }
 
         if (e.GetCurrentPoint(NodeEditorControl).Properties.PointerUpdateKind
             == PointerUpdateKind.MiddleButtonReleased)
@@ -275,7 +282,10 @@ public partial class MainWindow : Window
         while (visual != null)
         {
             if (visual is BaseNode or Connector or BaseConnection)
+            {
                 return true;
+            }
+
             visual = visual.GetVisualParent() as Visual;
         }
 
@@ -544,7 +554,9 @@ public partial class MainWindow : Window
     private void RestoreContextMenuTargetSelection(MainWindowViewModel vm)
     {
         if (_contextMenuTargetNode is null)
+        {
             return;
+        }
 
         _contextMenuTargetNode.IsSelected = true;
         vm.SelectedNode = _contextMenuTargetNode;
@@ -571,7 +583,9 @@ public partial class MainWindow : Window
     private void OnNodeContextMenuDelete(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm)
+        {
             return;
+        }
 
         RestoreContextMenuTargetSelection(vm);
         vm.DeleteNodeCommand.Execute(null);
@@ -581,7 +595,9 @@ public partial class MainWindow : Window
     private void OnNodeMoveToTabItemClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not MenuItem { Tag: TabViewModel targetTab } || DataContext is not MainWindowViewModel vm)
+        {
             return;
+        }
 
         RestoreContextMenuTargetSelection(vm);
         vm.MoveNodeToTabCommand.Execute(targetTab);
@@ -591,7 +607,9 @@ public partial class MainWindow : Window
     private void OnNodeContextMenuProperties(object? sender, RoutedEventArgs e)
     {
         if (DataContext is not MainWindowViewModel vm)
+        {
             return;
+        }
 
         RestoreContextMenuTargetSelection(vm);
         vm.IsPropertiesPanelVisible = true;

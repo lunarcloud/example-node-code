@@ -171,7 +171,9 @@ public class MainWindowViewModelTests
         node.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(NodeViewModel.Location))
+            {
                 propertyChangedFired = true;
+            }
         };
 
         // Act — simulate what the TwoWay binding does when NodifyEditor moves a node
@@ -265,7 +267,9 @@ public class MainWindowViewModelTests
         node.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(NodeViewModel.IsSelected))
+            {
                 propertyChangedFired = true;
+            }
         };
 
         // Act — simulate what the TwoWay binding does when the node is selected

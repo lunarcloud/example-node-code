@@ -483,7 +483,9 @@ internal sealed class AddTabPassPairAction : IUndoableAction
         }
 
         if (_vm.SelectedNode == _node1 || _vm.SelectedNode == _node2)
+        {
             _vm.SelectedNode = null;
+        }
 
         _vm.ValidateNodeNamesInTab(_tab);
     }
@@ -518,7 +520,9 @@ internal sealed class AddTabPassSlotAction : IUndoableAction
     {
         var slot = _node.ConnectorSlots.FirstOrDefault(s => s.Name == _slotName && s.IsInput == _isInput);
         if (slot is not null)
+        {
             _vm.RemoveTabPassSlotCore(_node, slot);
+        }
     }
 
     public void Redo() => _node.AddConnectorSlot(_slotName, _isInput);
@@ -547,6 +551,8 @@ internal sealed class RemoveTabPassSlotAction : IUndoableAction
     {
         var slot = _node.ConnectorSlots.FirstOrDefault(s => s.Name == _slotName && s.IsInput == _isInput);
         if (slot is not null)
+        {
             _vm.RemoveTabPassSlotCore(_node, slot);
+        }
     }
 }

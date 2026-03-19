@@ -71,7 +71,7 @@ The application includes the following node types:
 | ----------------------- | ------ | ------- | ---------------------------------------- |
 | Number Producer         | None   | Output  | Produces a constant numeric value        |
 | Random Number Generator | None   | Output  | Generates a random number in a range     |
-| Arithmetic Transform    | A, B   | Result  | Performs arithmetic operations            |
+| Arithmetic Transform    | A, B   | Result  | Performs arithmetic operations           |
 | Pass Filter             | Input  | Output  | Filters signals (Low/High/Mid pass)      |
 | Number Reporter         | Input  | None    | Displays the received numeric value      |
 
