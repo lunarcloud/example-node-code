@@ -8,6 +8,7 @@ namespace AvaloniaNodeEditor.Models;
 [JsonSerializable(typeof(TabData))]
 [JsonSerializable(typeof(List<TabData>))]
 [JsonSerializable(typeof(Dictionary<string, LayoutData>))]
+[JsonSerializable(typeof(List<SlotData>))]
 [JsonSourceGenerationOptions(
     WriteIndented = true,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,

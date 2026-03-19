@@ -7,7 +7,8 @@ namespace AvaloniaNodeEditor.ViewModels;
 public partial class ConnectorViewModel : ObservableObject
 {
     /// <summary>The display name of the connector.</summary>
-    public string Name { get; set; } = string.Empty;
+    [ObservableProperty]
+    private string _name = string.Empty;
 
     /// <summary>True when at least one connection is attached to this connector.</summary>
     [ObservableProperty]

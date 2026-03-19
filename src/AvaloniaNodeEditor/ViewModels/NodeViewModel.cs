@@ -15,6 +15,16 @@ public abstract partial class NodeViewModel : ObservableObject
     [ObservableProperty]
     private string _name = string.Empty;
 
+    /// <summary>
+    /// The name shown in the node header on the canvas.
+    /// Defaults to <see cref="Name"/>; can be overridden by subclasses (e.g. <c>TabPassNode</c>
+    /// which shows a shared pair label instead of the unique internal name).
+    /// </summary>
+    public virtual string DisplayName => Name;
+
+    /// <summary>Notifies that <see cref="DisplayName"/> has changed whenever <see cref="Name"/> changes.</summary>
+    partial void OnNameChanged(string value) => OnPropertyChanged(nameof(DisplayName));
+
     /// <summary>Indicates whether this node has a duplicate name conflict with another node.</summary>
     [ObservableProperty]
     private bool _hasNameError;

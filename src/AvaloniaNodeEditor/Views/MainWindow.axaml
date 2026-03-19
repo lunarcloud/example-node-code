@@ -274,6 +274,23 @@
                                 </ribbon:GalleryItem>
                             </ribbon:Gallery>
                         </ribbon:RibbonGroupBox>
+                        <!-- Utilities: cross-tab and routing nodes -->
+                        <ribbon:RibbonGroupBox Header="Utilities">
+                            <ribbon:Gallery Size="Large"
+                                            Loaded="OnNodeGalleryLoaded">
+                                <ribbon:GalleryItem Content="Tab Pass"
+                                                    Tag="Tab Pass"
+                                                    ToolTip.Tip="Tab Pass — drag to canvas (creates a linked pair)">
+                                    <ribbon:GalleryItem.LargeIcon>
+                                        <Border Width="32" Height="32" Background="#C0392B" CornerRadius="4">
+                                            <TextBlock Text="TP" Foreground="White"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       FontSize="11" FontWeight="Bold"/>
+                                        </Border>
+                                    </ribbon:GalleryItem.LargeIcon>
+                                </ribbon:GalleryItem>
+                            </ribbon:Gallery>
+                        </ribbon:RibbonGroupBox>
                     </ribbon:RibbonTab.Groups>
                 </ribbon:RibbonTab>
             </ribbon:Ribbon.Tabs>
@@ -392,7 +409,7 @@
                 <!-- Template for each node on the canvas -->
                 <nodify:NodifyEditor.ItemTemplate>
                     <DataTemplate>
-                        <nodify:Node Header="{Binding Name}"
+                        <nodify:Node Header="{Binding DisplayName}"
                                      Location="{Binding Location, Mode=TwoWay}"
                                      IsSelected="{Binding IsSelected, Mode=TwoWay}"
                                      Input="{Binding Inputs}"
@@ -598,6 +615,56 @@
                                         <NumericUpDown Value="{Binding UpperThreshold}"
                                                        FormatString="0.##"
                                                        Increment="0.1"/>
+                                    </StackPanel>
+                                </DataTemplate>
+
+                                <!-- Tab Pass properties -->
+                                <DataTemplate DataType="models:TabPassNode" x:CompileBindings="False">
+                                    <StackPanel Margin="8,4" Spacing="6">
+                                        <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
+                                        <TextBlock Text="Pair Name"/>
+                                        <TextBox x:Name="NodeNameTextBox"
+                                                 Text="{Binding PairLabel, Mode=TwoWay}"
+                                                 ToolTip.Tip="Shared display name shown on both paired nodes"/>
+                                        <Separator Margin="0,4"/>
+                                        <TextBlock Text="Connectors:" FontWeight="SemiBold"/>
+                                        <ItemsControl ItemsSource="{Binding ConnectorSlots}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:CompileBindings="False">
+                                                    <Grid ColumnDefinitions="*,Auto,Auto"
+                                                          Margin="0,2">
+                                                        <TextBox Grid.Column="0"
+                                                                 Text="{Binding Name, Mode=TwoWay}"
+                                                                 VerticalAlignment="Center"
+                                                                 Padding="4,2"
+                                                                 ToolTip.Tip="Edit the connector slot name"/>
+                                                        <TextBlock Grid.Column="1"
+                                                                   Text="{Binding DirectionLabel}"
+                                                                   Opacity="0.6"
+                                                                   FontSize="11"
+                                                                   Margin="4,0"
+                                                                   VerticalAlignment="Center"/>
+                                                        <Button Grid.Column="2"
+                                                                Content="✕"
+                                                                Padding="4,0"
+                                                                FontSize="11"
+                                                                ToolTip.Tip="Remove this connector slot"
+                                                                Command="{Binding $parent[Window].DataContext.RemoveTabPassSlotCommand}"
+                                                                CommandParameter="{Binding}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <StackPanel Orientation="Horizontal" Spacing="4">
+                                            <Button Content="+ Input"
+                                                    ToolTip.Tip="Add an input connector slot"
+                                                    Command="{Binding $parent[Window].DataContext.AddTabPassInputSlotCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                            <Button Content="+ Output"
+                                                    ToolTip.Tip="Add an output connector slot"
+                                                    Command="{Binding $parent[Window].DataContext.AddTabPassOutputSlotCommand}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
                                     </StackPanel>
                                 </DataTemplate>
 

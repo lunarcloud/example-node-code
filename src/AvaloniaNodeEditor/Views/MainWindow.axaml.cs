@@ -39,6 +39,12 @@ public partial class MainWindow : Window
     private string? _tabRenameOldName;
     private TabViewModel? _tabBeingRenamed;
 
+    // ── Node context-menu target ─────────────────────────────────────────────
+    // Captured in the tunnel right-click handler so that context-menu item clicks
+    // can reliably restore SelectedNode even if NodifyEditor deselects nodes after
+    // the pointer press.
+    private NodeViewModel? _contextMenuTargetNode;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -149,6 +155,16 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Right-click: capture the right-clicked node in _contextMenuTargetNode so each
+        // context-menu item click can restore SelectedNode before executing its command,
+        // even if NodifyEditor deselects all nodes while processing the right-click.
+        if (props.IsRightButtonPressed)
+        {
+            _contextMenuTargetNode = GetNodeViewModelFromSource(e.Source);
+            // Do NOT mark as handled — the event must still reach the ContextMenu.
+            return;
+        }
+
         // Block left-button panning on empty canvas.
         // Allow: clicks on nodes/connectors/connections (they handle their own interaction),
         //        Shift+left (selection rectangle), Alt+left (connection removal).
@@ -170,6 +186,24 @@ public partial class MainWindow : Window
                 e.Handled = true;
             }
         }
+    }
+
+    /// <summary>
+    /// Walks the visual tree from <paramref name="source"/> upward looking for a
+    /// <see cref="BaseNode"/> whose DataContext is a <see cref="NodeViewModel"/>.
+    /// Returns the <see cref="NodeViewModel"/> if found, <c>null</c> otherwise.
+    /// </summary>
+    private static NodeViewModel? GetNodeViewModelFromSource(object? source)
+    {
+        var visual = source as Visual;
+        while (visual is not null)
+        {
+            if (visual is BaseNode nodeControl && nodeControl.DataContext is NodeViewModel nodeVm)
+                return nodeVm;
+            visual = visual.GetVisualParent() as Visual;
+        }
+
+        return null;
     }
 
     private void OnEditorPointerMovedMiddle(object? sender, PointerEventArgs e)
@@ -461,9 +495,19 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Select the right-clicked node so commands have a valid target.
-        if (contextMenu.PlacementTarget?.DataContext is NodeViewModel node)
+        // Resolve the right-clicked node: prefer the field captured in the tunnel handler
+        // (set before NodifyEditor can deselect nodes), with PlacementTarget as a fallback.
+        var node = _contextMenuTargetNode
+            ?? (contextMenu.PlacementTarget?.DataContext as NodeViewModel);
+
+        if (node is not null)
         {
+            // Keep _contextMenuTargetNode up to date so click handlers can reference it.
+            _contextMenuTargetNode = node;
+
+            // Re-select the node so commands have a valid target and the selection indicator
+            // is visible again (NodifyEditor may have cleared IsSelected on right-click).
+            node.IsSelected = true;
             vm.SelectedNode = node;
         }
 
@@ -492,6 +536,20 @@ public partial class MainWindow : Window
         moveToTabItem.ItemsSource = tabItems;
     }
 
+    /// <summary>
+    /// Restores <see cref="MainWindowViewModel.SelectedNode"/> from <see cref="_contextMenuTargetNode"/>
+    /// and ensures the node's <see cref="NodeViewModel.IsSelected"/> flag is set, counteracting any
+    /// deselection NodifyEditor applied while processing the right-click press.
+    /// </summary>
+    private void RestoreContextMenuTargetSelection(MainWindowViewModel vm)
+    {
+        if (_contextMenuTargetNode is null)
+            return;
+
+        _contextMenuTargetNode.IsSelected = true;
+        vm.SelectedNode = _contextMenuTargetNode;
+    }
+
     /// <summary>Context menu: shows the properties panel and focuses the Name field for the right-clicked node.</summary>
     private void OnNodeContextMenuRename(object? sender, RoutedEventArgs e)
     {
@@ -500,6 +558,7 @@ public partial class MainWindow : Window
             return;
         }
 
+        RestoreContextMenuTargetSelection(vm);
         vm.IsPropertiesPanelVisible = true;
 
         Dispatcher.UIThread.Post(() =>
@@ -511,28 +570,31 @@ public partial class MainWindow : Window
     /// <summary>Context menu: deletes the right-clicked node.</summary>
     private void OnNodeContextMenuDelete(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is MainWindowViewModel vm)
-        {
-            vm.DeleteNodeCommand.Execute(null);
-        }
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        RestoreContextMenuTargetSelection(vm);
+        vm.DeleteNodeCommand.Execute(null);
     }
 
     /// <summary>Context menu: moves the right-clicked node to the tab identified by the menu item's Tag.</summary>
     private void OnNodeMoveToTabItemClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem { Tag: TabViewModel targetTab } && DataContext is MainWindowViewModel vm)
-        {
-            vm.MoveNodeToTabCommand.Execute(targetTab);
-        }
+        if (sender is not MenuItem { Tag: TabViewModel targetTab } || DataContext is not MainWindowViewModel vm)
+            return;
+
+        RestoreContextMenuTargetSelection(vm);
+        vm.MoveNodeToTabCommand.Execute(targetTab);
     }
 
     /// <summary>Context menu: shows the properties panel for the right-clicked node.</summary>
     private void OnNodeContextMenuProperties(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is MainWindowViewModel vm)
-        {
-            vm.IsPropertiesPanelVisible = true;
-        }
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        RestoreContextMenuTargetSelection(vm);
+        vm.IsPropertiesPanelVisible = true;
     }
 
     /// <summary>

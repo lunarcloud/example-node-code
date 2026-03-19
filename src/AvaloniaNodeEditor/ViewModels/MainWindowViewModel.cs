@@ -102,6 +102,7 @@ public partial class MainWindowViewModel : ViewModelBase
         "Arithmetic Transform",
         "Random Number Generator",
         "Pass Filter",
+        "Tab Pass",
     ];
 
     /// <summary>The node currently held in the in-memory clipboard for paste operations.</summary>
@@ -260,6 +261,12 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <param name="canvasPosition">The position in canvas coordinates where the node will be placed.</param>
     public void AddNodeAt(string nodeType, Point canvasPosition)
     {
+        if (nodeType == "Tab Pass")
+        {
+            AddTabPassPairAt(canvasPosition);
+            return;
+        }
+
         NodeViewModel node = nodeType switch
         {
             "Number Producer" => new NumberProducerNode { Location = canvasPosition },
@@ -281,6 +288,130 @@ public partial class MainWindowViewModel : ViewModelBase
         SelectedNode = node;
 
         _undoRedoManager.Record(new AddNodeAction(this, tab, node));
+    }
+
+    /// <summary>Creates a linked Tab-Pass pair at the specified position and records the action for undo/redo.</summary>
+    private void AddTabPassPairAt(Point canvasPosition)
+    {
+        var pairId = Guid.NewGuid();
+
+        var node1 = new TabPassNode { Location = canvasPosition, PairId = pairId, PairIndex = 1 };
+        var node2 = new TabPassNode
+        {
+            Location = new Point(canvasPosition.X + 220, canvasPosition.Y),
+            PairId = pairId,
+            PairIndex = 2,
+        };
+
+        // Link the pair before setting PairLabel so the name-sync fires on both nodes.
+        node1.Pair = node2;
+        node2.Pair = node1;
+
+        // Setting PairLabel on node1 propagates to node2 and auto-sets Name on both nodes
+        // to "{PairLabel}.1" and "{PairLabel}.2" respectively.
+        var baseLabel = GenerateUniquePairLabel("Tab Pass");
+        node1.PairLabel = baseLabel;
+
+        // Add default slots: node1 gets an input and an output; node2 receives the mirrors.
+        node1.AddConnectorSlot("In 1", isInput: true);
+        node1.AddConnectorSlot("Out 1", isInput: false);
+
+        TrackNodeSelection(node1);
+        TrackNodeName(node1);
+        TrackNodeSelection(node2);
+        TrackNodeName(node2);
+
+        var tab = ActiveTab!;
+        Nodes.Add(node1);
+        Nodes.Add(node2);
+        SelectedNode = node1;
+
+        _undoRedoManager.Record(new AddTabPassPairAction(this, tab, node1, node2));
+    }
+
+    /// <summary>Adds an input slot to the given Tab-Pass node and records the action for undo/redo.</summary>
+    [RelayCommand]
+    private void AddTabPassInputSlot(TabPassNode? node)
+    {
+        if (node is null)
+            return;
+        var name = node.GenerateNextInputSlotName();
+        node.AddConnectorSlot(name, isInput: true);
+        _undoRedoManager.Record(new AddTabPassSlotAction(this, node, name, isInput: true));
+    }
+
+    /// <summary>Adds an output slot to the given Tab-Pass node and records the action for undo/redo.</summary>
+    [RelayCommand]
+    private void AddTabPassOutputSlot(TabPassNode? node)
+    {
+        if (node is null)
+            return;
+        var name = node.GenerateNextOutputSlotName();
+        node.AddConnectorSlot(name, isInput: false);
+        _undoRedoManager.Record(new AddTabPassSlotAction(this, node, name, isInput: false));
+    }
+
+    /// <summary>Removes a slot from a Tab-Pass node, cleaning up any attached connections, and records the action for undo/redo.</summary>
+    [RelayCommand]
+    private void RemoveTabPassSlot(TabPassConnectorSlot? slot)
+    {
+        if (slot is null)
+            return;
+
+        // Locate the owning node across all tabs.
+        var node = Tabs.SelectMany(t => t.Nodes)
+                       .OfType<TabPassNode>()
+                       .FirstOrDefault(n => n.ConnectorSlots.Contains(slot));
+        if (node is null)
+            return;
+
+        RemoveTabPassSlotInternal(node, slot);
+    }
+
+    /// <summary>Internal slot-removal logic used by both the command and undo/redo actions.</summary>
+    internal void RemoveTabPassSlotInternal(TabPassNode node, TabPassConnectorSlot slot)
+    {
+        var slotName = slot.Name;
+        var isInput = slot.IsInput;
+
+        RemoveTabPassSlotCore(node, slot);
+
+        _undoRedoManager.Record(new RemoveTabPassSlotAction(this, node, slotName, isInput));
+    }
+
+    /// <summary>
+    /// Physical slot removal used directly by undo/redo actions.
+    /// Does NOT record on the undo stack.
+    /// </summary>
+    internal void RemoveTabPassSlotCore(TabPassNode node, TabPassConnectorSlot slot)
+    {
+        var (removed, pairRemoved) = node.RemoveConnectorSlot(slot);
+
+        if (removed is not null)
+            RemoveConnectionsForConnectorInAllTabs(removed);
+
+        if (pairRemoved is not null)
+            RemoveConnectionsForConnectorInAllTabs(pairRemoved);
+    }
+
+    /// <summary>Removes all connections referencing <paramref name="connector"/> from every tab.</summary>
+    private void RemoveConnectionsForConnectorInAllTabs(ConnectorViewModel connector)
+    {
+        foreach (var tab in Tabs)
+        {
+            var toRemove = tab.Connections
+                .Where(c => c.Source == connector || c.Target == connector)
+                .ToList();
+
+            foreach (var conn in toRemove)
+            {
+                tab.Connections.Remove(conn);
+                var other = conn.Source == connector ? conn.Target : conn.Source;
+                other.IsConnected = tab.Connections.Any(c => c.Source == other || c.Target == other);
+            }
+
+            connector.IsConnected = false;
+        }
     }
 
     /// <summary>Called by the editor when the user finishes dragging a connection to a target connector.
@@ -515,8 +646,23 @@ public partial class MainWindowViewModel : ViewModelBase
                 Threshold = pf.Threshold,
                 UpperThreshold = pf.UpperThreshold,
             },
+            TabPassNode tp => CloneTabPassNode(tp, position),
             _ => null,
         };
+
+    /// <summary>
+    /// Creates a standalone (unpaired) copy of a <see cref="TabPassNode"/> at <paramref name="position"/>.
+    /// The clone receives a fresh <see cref="TabPassNode.PairId"/> and has no <see cref="TabPassNode.Pair"/> link.
+    /// <see cref="TabPassNode.PairLabel"/> is intentionally not copied so the clone does not produce a
+    /// name collision with the source node.
+    /// </summary>
+    private static TabPassNode CloneTabPassNode(TabPassNode source, Point position)
+    {
+        var clone = new TabPassNode { Location = position };
+        foreach (var slot in source.ConnectorSlots)
+            clone.AddConnectorSlotInternal(slot.Name, slot.IsInput);
+        return clone;
+    }
 
     /// <summary>Clears all nodes and connections from the graph and resets to a single default tab.</summary>
     [RelayCommand]
@@ -609,6 +755,14 @@ public partial class MainWindowViewModel : ViewModelBase
                     nodeData.Threshold = pf.Threshold;
                     nodeData.UpperThreshold = pf.UpperThreshold;
                     break;
+                case TabPassNode tp:
+                    nodeData.PairId = tp.PairId.ToString();
+                    nodeData.PairLabel = string.IsNullOrEmpty(tp.PairLabel) ? null : tp.PairLabel;
+                    nodeData.PairIndex = tp.PairIndex;
+                    nodeData.Slots = tp.ConnectorSlots
+                        .Select(s => new SlotData { Name = s.Name, IsInput = s.IsInput })
+                        .ToList();
+                    break;
             }
 
             tabData.Nodes.Add(nodeData);
@@ -674,6 +828,9 @@ public partial class MainWindowViewModel : ViewModelBase
             ReplaceAllTabs([tab]);
         }
 
+        // Link Tab-Pass pairs across all tabs by shared PairId.
+        LinkTabPassPairs();
+
         // A freshly loaded graph has no history.
         _undoRedoManager.Clear();
         _nodeRenameOldNames.Clear();
@@ -723,6 +880,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 "Arithmetic Transform" => CreateArithmeticTransform(nodeData, position),
                 "Random Number Generator" => CreateRandomNumberGenerator(nodeData, position),
                 "Pass Filter" => CreatePassFilter(nodeData, position),
+                "Tab Pass" => CreateTabPassNode(nodeData, position),
                 _ => throw new JsonException($"Unknown node type: {nodeData.Type}"),
             };
 
@@ -757,6 +915,22 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         int index = 1;
         while (Nodes.Any(n => n.Name == $"{nodeType} {index}"))
+        {
+            index++;
+        }
+
+        return $"{nodeType} {index}";
+    }
+
+    /// <summary>
+    /// Generates a unique pair label for a Tab-Pass pair so that neither
+    /// <c>{label}.1</c> nor <c>{label}.2</c> conflicts with an existing node name across all tabs.
+    /// </summary>
+    private string GenerateUniquePairLabel(string nodeType)
+    {
+        var allNames = Tabs.SelectMany(t => t.Nodes).Select(n => n.Name).ToHashSet();
+        int index = 1;
+        while (allNames.Contains($"{nodeType} {index}.1") || allNames.Contains($"{nodeType} {index}.2"))
         {
             index++;
         }
@@ -834,6 +1008,47 @@ public partial class MainWindowViewModel : ViewModelBase
             Threshold = data.Threshold ?? 0,
             UpperThreshold = data.UpperThreshold ?? 0,
         };
+    }
+
+    private static TabPassNode CreateTabPassNode(NodeData data, Point position)
+    {
+        var node = new TabPassNode { Location = position };
+
+        if (Guid.TryParse(data.PairId, out var pairId))
+            node.PairId = pairId;
+
+        if (data.PairIndex > 0)
+            node.PairIndex = data.PairIndex;
+
+        if (!string.IsNullOrEmpty(data.PairLabel))
+            node.PairLabel = data.PairLabel;
+
+        if (data.Slots is not null)
+        {
+            foreach (var slotData in data.Slots)
+                node.AddConnectorSlotInternal(slotData.Name, slotData.IsInput);
+        }
+
+        return node;
+    }
+
+    /// <summary>
+    /// Scans all tabs for <see cref="TabPassNode"/> instances and links siblings that share the same
+    /// <see cref="TabPassNode.PairId"/>.  Called once after all tabs have been restored from JSON.
+    /// </summary>
+    private void LinkTabPassPairs()
+    {
+        var allNodes = Tabs.SelectMany(t => t.Nodes).OfType<TabPassNode>().ToList();
+
+        foreach (var group in allNodes.GroupBy(n => n.PairId))
+        {
+            var pair = group.ToList();
+            if (pair.Count == 2)
+            {
+                pair[0].Pair = pair[1];
+                pair[1].Pair = pair[0];
+            }
+        }
     }
 
     /// <summary>Finds the node name and connector name for a given connector view model in the active tab.</summary>
