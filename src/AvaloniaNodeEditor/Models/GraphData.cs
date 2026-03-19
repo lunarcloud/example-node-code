@@ -14,13 +14,36 @@ public class GraphData
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Version { get; set; }
 
-    /// <summary>The nodes in the graph.</summary>
+    /// <summary>
+    /// The tabs in the graph editor.  When present this supersedes the legacy
+    /// <see cref="Nodes" />, <see cref="Layout" /> and <see cref="Connections" /> fields.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<TabData>? Tabs { get; set; }
+
+    /// <summary>Legacy single-tab nodes list.  Used only when <see cref="Tabs" /> is absent.</summary>
+    public List<NodeData> Nodes { get; set; } = [];
+
+    /// <summary>Legacy single-tab layout dictionary.  Used only when <see cref="Tabs" /> is absent.</summary>
+    public Dictionary<string, LayoutData> Layout { get; set; } = [];
+
+    /// <summary>Legacy single-tab connections list.  Used only when <see cref="Tabs" /> is absent.</summary>
+    public List<ConnectionData> Connections { get; set; } = [];
+}
+
+/// <summary>Data transfer object representing a single graph tab for serialization.</summary>
+public class TabData
+{
+    /// <summary>The display title of this tab.</summary>
+    public string Title { get; set; } = "Tab 1";
+
+    /// <summary>The nodes in this tab's graph.</summary>
     public List<NodeData> Nodes { get; set; } = [];
 
     /// <summary>The visual layout positions of nodes, keyed by node name.</summary>
     public Dictionary<string, LayoutData> Layout { get; set; } = [];
 
-    /// <summary>The connections between node connectors.</summary>
+    /// <summary>The connections between node connectors in this tab's graph.</summary>
     public List<ConnectionData> Connections { get; set; } = [];
 }
 

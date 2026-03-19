@@ -1134,4 +1134,225 @@ public class MainWindowViewModelTests
         // Assert — reporter's input connector is no longer connected
         Assert.False(target.IsConnected);
     }
+
+    // ── Tabs ─────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Constructor_CreatesDefaultTab()
+    {
+        // Arrange & Act
+        var viewModel = new MainWindowViewModel();
+
+        // Assert — one tab named "Tab 1" is created and set as active
+        Assert.Single(viewModel.Tabs);
+        Assert.Equal("Tab 1", viewModel.Tabs[0].Name);
+        Assert.NotNull(viewModel.ActiveTab);
+        Assert.Same(viewModel.Tabs[0], viewModel.ActiveTab);
+    }
+
+    [Fact]
+    public void AddTab_AddsNewTab()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null);
+        Assert.Equal(2, viewModel.Tabs.Count);
+    }
+
+    [Fact]
+    public void AddTab_SwitchesToNewTab()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null);
+        Assert.Same(viewModel.Tabs[1], viewModel.ActiveTab);
+    }
+
+    [Fact]
+    public void AddTab_GeneratesUniqueName()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null);
+        Assert.Equal("Tab 2", viewModel.Tabs[1].Name);
+    }
+
+    [Fact]
+    public void AddTabAfter_InsertsAfterTargetTab()
+    {
+        // Arrange — two tabs: Tab 1 (index 0) and Tab 2 (index 1)
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null); // Creates Tab 2
+        var tab1 = viewModel.Tabs[0];
+        var tab2 = viewModel.Tabs[1];
+
+        // Act — insert a new tab after Tab 1
+        viewModel.AddTabAfterCommand.Execute(tab1);
+
+        // Assert — Tab 1, new tab, Tab 2
+        Assert.Equal(3, viewModel.Tabs.Count);
+        Assert.Same(tab1, viewModel.Tabs[0]);
+        Assert.Equal("Tab 3", viewModel.Tabs[1].Name); // New tab is "Tab 3" (Tab 1 and Tab 2 taken)
+        Assert.Same(tab2, viewModel.Tabs[2]);
+    }
+
+    [Fact]
+    public void DeleteTab_RemovesTab()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null);
+        var tab2 = viewModel.Tabs[1];
+
+        viewModel.DeleteTabCommand.Execute(tab2);
+
+        Assert.Single(viewModel.Tabs);
+        Assert.DoesNotContain(tab2, viewModel.Tabs);
+    }
+
+    [Fact]
+    public void DeleteTab_LastTab_DoesNotRemove()
+    {
+        // The last remaining tab must never be deleted.
+        var viewModel = new MainWindowViewModel();
+        Assert.Single(viewModel.Tabs);
+
+        viewModel.DeleteTabCommand.Execute(viewModel.Tabs[0]);
+
+        Assert.Single(viewModel.Tabs);
+    }
+
+    [Fact]
+    public void DeleteTab_ActiveTab_SwitchesToAdjacentTab()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null); // Tab 2
+        viewModel.AddTabCommand.Execute(null); // Tab 3
+        var tab2 = viewModel.Tabs[1]; // currently active after last AddTab
+
+        // Make Tab 2 active then delete it
+        viewModel.ActiveTab = tab2;
+        viewModel.DeleteTabCommand.Execute(tab2);
+
+        // Should have switched to the adjacent (now index 1) tab
+        Assert.Equal(2, viewModel.Tabs.Count);
+        Assert.NotSame(tab2, viewModel.ActiveTab);
+    }
+
+    [Fact]
+    public void Tabs_NodesAreIsolated()
+    {
+        // Nodes added to one tab must not appear in another.
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+
+        viewModel.AddTabCommand.Execute(null); // Switch to new empty tab
+
+        Assert.Empty(viewModel.Nodes);
+        Assert.Single(viewModel.Tabs[0].Nodes);
+    }
+
+    [Fact]
+    public void SwitchingTabs_UpdatesNodes()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        viewModel.AddTabCommand.Execute(null); // Tab 2 — empty
+
+        Assert.Empty(viewModel.Nodes);
+
+        viewModel.ActiveTab = viewModel.Tabs[0]; // Back to Tab 1
+
+        Assert.Single(viewModel.Nodes);
+    }
+
+    [Fact]
+    public void SwitchingTabs_ClearsSelectedNode()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20));
+        Assert.NotNull(viewModel.SelectedNode);
+
+        viewModel.AddTabCommand.Execute(null); // Switch to new tab
+
+        Assert.Null(viewModel.SelectedNode);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_MultipleTabs_PreservesAllTabs()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddNodeAt("Number Producer", new Point(10, 20)); // Tab 1
+        viewModel.AddTabCommand.Execute(null); // Tab 2
+        viewModel.AddNodeAt("Number Reporter", new Point(100, 200)); // Tab 2
+
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        Assert.Equal(2, viewModel2.Tabs.Count);
+        Assert.Single(viewModel2.Tabs[0].Nodes);
+        Assert.Equal("Number Producer", viewModel2.Tabs[0].Nodes[0].NodeType);
+        Assert.Single(viewModel2.Tabs[1].Nodes);
+        Assert.Equal("Number Reporter", viewModel2.Tabs[1].Nodes[0].NodeType);
+    }
+
+    [Fact]
+    public void SerializeDeserialize_MultipleTabs_PreservesTabNames()
+    {
+        // Arrange
+        var viewModel = new MainWindowViewModel();
+        viewModel.Tabs[0].Name = "My First Tab";
+        viewModel.AddTabCommand.Execute(null);
+        viewModel.Tabs[1].Name = "My Second Tab";
+
+        var json = viewModel.SerializeGraph();
+
+        // Act
+        var viewModel2 = new MainWindowViewModel();
+        viewModel2.DeserializeGraph(json);
+
+        // Assert
+        Assert.Equal("My First Tab", viewModel2.Tabs[0].Name);
+        Assert.Equal("My Second Tab", viewModel2.Tabs[1].Name);
+    }
+
+    [Fact]
+    public void DeserializeGraph_LegacyFormat_LoadsIntoSingleTab()
+    {
+        // A JSON file produced before the tabs feature should load into a single tab.
+        const string legacyJson = """
+            {
+              "nodes": [
+                { "name": "Number Producer 1", "type": "Number Producer" }
+              ],
+              "layout": {
+                "Number Producer 1": { "x": 50, "y": 75 }
+              },
+              "connections": []
+            }
+            """;
+
+        var viewModel = new MainWindowViewModel();
+        viewModel.DeserializeGraph(legacyJson);
+
+        Assert.Single(viewModel.Tabs);
+        Assert.Single(viewModel.Nodes);
+        Assert.Equal("Number Producer", viewModel.Nodes[0].NodeType);
+        Assert.Equal(new Point(50, 75), viewModel.Nodes[0].Location);
+    }
+
+    [Fact]
+    public void NewGraph_ResetsToSingleTab()
+    {
+        var viewModel = new MainWindowViewModel();
+        viewModel.AddTabCommand.Execute(null);
+        viewModel.AddTabCommand.Execute(null);
+        Assert.Equal(3, viewModel.Tabs.Count);
+
+        viewModel.NewGraphCommand.Execute(null);
+
+        Assert.Single(viewModel.Tabs);
+        Assert.Equal("Tab 1", viewModel.Tabs[0].Name);
+    }
 }
