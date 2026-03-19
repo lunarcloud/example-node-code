@@ -261,6 +261,81 @@ internal sealed class DisconnectConnectorAction : IUndoableAction
     }
 }
 
+// ── Move-node-to-tab action ───────────────────────────────────────────────────
+
+/// <summary>Records moving a node from one tab to another, including removal of its cross-tab connections.</summary>
+internal sealed class MoveNodeToTabAction : IUndoableAction
+{
+    private readonly MainWindowViewModel _vm;
+    private readonly NodeViewModel _node;
+    private readonly TabViewModel _sourceTab;
+    private readonly TabViewModel _targetTab;
+    private readonly IReadOnlyList<ConnectionViewModel> _removedConnections;
+
+    public MoveNodeToTabAction(
+        MainWindowViewModel vm,
+        NodeViewModel node,
+        TabViewModel sourceTab,
+        TabViewModel targetTab,
+        IReadOnlyList<ConnectionViewModel> removedConnections)
+    {
+        _vm = vm;
+        _node = node;
+        _sourceTab = sourceTab;
+        _targetTab = targetTab;
+        _removedConnections = removedConnections;
+    }
+
+    public void Undo()
+    {
+        // Move the node back to the source tab.
+        _targetTab.Nodes.Remove(_node);
+        _sourceTab.Nodes.Add(_node);
+
+        // Restore the connections that were removed when the node was moved.
+        foreach (var conn in _removedConnections)
+        {
+            _sourceTab.Connections.Add(conn);
+            conn.Source.IsConnected = true;
+            conn.Target.IsConnected = true;
+        }
+
+        if (_vm.ActiveTab == _sourceTab)
+        {
+            _vm.SelectedNode = _node;
+        }
+        else if (_vm.ActiveTab == _targetTab && _vm.SelectedNode == _node)
+        {
+            _vm.SelectedNode = null;
+        }
+
+        _vm.ValidateNodeNamesInTab(_sourceTab);
+        _vm.ValidateNodeNamesInTab(_targetTab);
+    }
+
+    public void Redo()
+    {
+        // Remove connections from the source tab.
+        foreach (var conn in _removedConnections)
+        {
+            _sourceTab.Connections.Remove(conn);
+            ConnectorHelper.UpdateIsConnected(_sourceTab, conn.Source);
+            ConnectorHelper.UpdateIsConnected(_sourceTab, conn.Target);
+        }
+
+        _sourceTab.Nodes.Remove(_node);
+
+        if (_vm.ActiveTab == _sourceTab && _vm.SelectedNode == _node)
+        {
+            _vm.SelectedNode = null;
+        }
+
+        _targetTab.Nodes.Add(_node);
+        _vm.ValidateNodeNamesInTab(_sourceTab);
+        _vm.ValidateNodeNamesInTab(_targetTab);
+    }
+}
+
 // ── Tab actions ───────────────────────────────────────────────────────────────
 
 /// <summary>Records the addition of a new tab.</summary>

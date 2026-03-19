@@ -398,7 +398,19 @@
                                      Input="{Binding Inputs}"
                                      Output="{Binding Outputs}"
                                      InputConnectorTemplate="{StaticResource InputConnectorTemplate}"
-                                     OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}" />
+                                     OutputConnectorTemplate="{StaticResource OutputConnectorTemplate}">
+                            <nodify:Node.ContextMenu>
+                                <ContextMenu Opening="OnNodeContextMenuOpening">
+                                    <MenuItem Header="Rename"
+                                              Click="OnNodeContextMenuRename"/>
+                                    <MenuItem Header="Delete"
+                                              Click="OnNodeContextMenuDelete"/>
+                                    <MenuItem Header="Move To Tab"/>
+                                    <MenuItem Header="Properties"
+                                              Click="OnNodeContextMenuProperties"/>
+                                </ContextMenu>
+                            </nodify:Node.ContextMenu>
+                        </nodify:Node>
                     </DataTemplate>
                 </nodify:NodifyEditor.ItemTemplate>
 
@@ -471,7 +483,7 @@
 
                     <!-- Node-specific properties -->
                     <ScrollViewer IsVisible="{Binding SelectedNode, Converter={x:Static ObjectConverters.IsNotNull}}">
-                        <ContentControl Content="{Binding SelectedNode}">
+                        <ContentControl x:Name="NodePropertiesContent" Content="{Binding SelectedNode}">
                             <ContentControl.DataTemplates>
 
                                 <!-- Number Producer properties -->
@@ -479,7 +491,8 @@
                                     <StackPanel Margin="8,4" Spacing="6">
                                         <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
                                         <TextBlock Text="Name"/>
-                                        <TextBox Text="{Binding Name}"
+                                        <TextBox x:Name="NodeNameTextBox"
+                                                 Text="{Binding Name}"
                                                  Classes.nameError="{Binding HasNameError}"/>
                                         <TextBlock Text="Duplicate node name"
                                                    IsVisible="{Binding HasNameError}"
@@ -496,7 +509,8 @@
                                     <StackPanel Margin="8,4" Spacing="6">
                                         <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
                                         <TextBlock Text="Name"/>
-                                        <TextBox Text="{Binding Name}"
+                                        <TextBox x:Name="NodeNameTextBox"
+                                                 Text="{Binding Name}"
                                                  Classes.nameError="{Binding HasNameError}"/>
                                         <TextBlock Text="Duplicate node name"
                                                    IsVisible="{Binding HasNameError}"
@@ -512,7 +526,8 @@
                                     <StackPanel Margin="8,4" Spacing="6">
                                         <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
                                         <TextBlock Text="Name"/>
-                                        <TextBox Text="{Binding Name}"
+                                        <TextBox x:Name="NodeNameTextBox"
+                                                 Text="{Binding Name}"
                                                  Classes.nameError="{Binding HasNameError}"/>
                                         <TextBlock Text="Duplicate node name"
                                                    IsVisible="{Binding HasNameError}"
@@ -540,7 +555,8 @@
                                     <StackPanel Margin="8,4" Spacing="6">
                                         <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
                                         <TextBlock Text="Name"/>
-                                        <TextBox Text="{Binding Name}"
+                                        <TextBox x:Name="NodeNameTextBox"
+                                                 Text="{Binding Name}"
                                                  Classes.nameError="{Binding HasNameError}"/>
                                         <TextBlock Text="Duplicate node name"
                                                    IsVisible="{Binding HasNameError}"
@@ -564,7 +580,8 @@
                                     <StackPanel Margin="8,4" Spacing="6">
                                         <TextBlock Text="{Binding NodeType}" FontWeight="SemiBold"/>
                                         <TextBlock Text="Name"/>
-                                        <TextBox Text="{Binding Name}"
+                                        <TextBox x:Name="NodeNameTextBox"
+                                                 Text="{Binding Name}"
                                                  Classes.nameError="{Binding HasNameError}"/>
                                         <TextBlock Text="Duplicate node name"
                                                    IsVisible="{Binding HasNameError}"

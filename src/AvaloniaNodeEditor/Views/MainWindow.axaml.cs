@@ -448,6 +448,111 @@ public partial class MainWindow : Window
         }
     }
 
+    // ── Node context menu ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fired just before the node context menu opens. Selects the right-clicked node and
+    /// populates the dynamic "Move To Tab" submenu with the current tab list.
+    /// </summary>
+    private void OnNodeContextMenuOpening(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (sender is not ContextMenu contextMenu || DataContext is not MainWindowViewModel vm)
+        {
+            return;
+        }
+
+        // Select the right-clicked node so commands have a valid target.
+        if (contextMenu.PlacementTarget?.DataContext is NodeViewModel node)
+        {
+            vm.SelectedNode = node;
+        }
+
+        // Rebuild the "Move To Tab" submenu from the current tab list.
+        var moveToTabItem = contextMenu.Items
+            .OfType<MenuItem>()
+            .FirstOrDefault(m => m.Header is "Move To Tab");
+
+        if (moveToTabItem is null)
+        {
+            return;
+        }
+
+        var tabItems = vm.Tabs.Select(tab =>
+        {
+            var item = new MenuItem
+            {
+                Header = tab.Name,
+                Tag = tab,
+                IsEnabled = tab != vm.ActiveTab,
+            };
+            item.Click += OnNodeMoveToTabItemClick;
+            return item;
+        }).ToList();
+
+        moveToTabItem.ItemsSource = tabItems;
+    }
+
+    /// <summary>Context menu: shows the properties panel and focuses the Name field for the right-clicked node.</summary>
+    private void OnNodeContextMenuRename(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is not MainWindowViewModel vm)
+        {
+            return;
+        }
+
+        vm.IsPropertiesPanelVisible = true;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            FocusNodeNameTextBox();
+        });
+    }
+
+    /// <summary>Context menu: deletes the right-clicked node.</summary>
+    private void OnNodeContextMenuDelete(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.DeleteNodeCommand.Execute(null);
+        }
+    }
+
+    /// <summary>Context menu: moves the right-clicked node to the tab identified by the menu item's Tag.</summary>
+    private void OnNodeMoveToTabItemClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem { Tag: TabViewModel targetTab } && DataContext is MainWindowViewModel vm)
+        {
+            vm.MoveNodeToTabCommand.Execute(targetTab);
+        }
+    }
+
+    /// <summary>Context menu: shows the properties panel for the right-clicked node.</summary>
+    private void OnNodeContextMenuProperties(object? sender, RoutedEventArgs e)
+    {
+        if (DataContext is MainWindowViewModel vm)
+        {
+            vm.IsPropertiesPanelVisible = true;
+        }
+    }
+
+    /// <summary>
+    /// Focuses and selects-all in the Name TextBox inside the node properties content panel.
+    /// Posts the action so the UI has time to render the panel before focusing.
+    /// </summary>
+    private void FocusNodeNameTextBox()
+    {
+        var textBox = NodePropertiesContent?
+            .GetVisualDescendants()
+            .OfType<TextBox>()
+            .FirstOrDefault(tb => tb.IsVisible && tb.Name == "NodeNameTextBox");
+
+        if (textBox is not null)
+        {
+            textBox.Focus();
+            textBox.SelectAll();
+        }
+    }
+
     /// <summary>Context menu: inserts a new tab to the right of the right-clicked tab.</summary>
     private void OnTabContextMenuNewTab(object? sender, RoutedEventArgs e)
     {
