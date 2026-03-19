@@ -134,6 +134,11 @@ public partial class MainWindowViewModel : ViewModelBase
     /// Also commits any in-progress node rename when the selection moves away.</summary>
     partial void OnSelectedNodeChanged(NodeViewModel? oldValue, NodeViewModel? newValue)
     {
+        if (oldValue is not null)
+        {
+            oldValue.IsRenaming = false;
+        }
+
         CommitPendingRename(oldValue);
         CopyNodeCommand.NotifyCanExecuteChanged();
         DeleteNodeCommand.NotifyCanExecuteChanged();
@@ -448,6 +453,76 @@ public partial class MainWindowViewModel : ViewModelBase
     }
 
     private bool CanDeleteNode() => SelectedNode is not null;
+
+    /// <summary>Enters inline-rename mode for the given node, selecting it first if necessary.</summary>
+    [RelayCommand]
+    private void RenameNode(NodeViewModel? node)
+    {
+        if (node is null)
+        {
+            return;
+        }
+
+        SelectedNode = node;
+        node.IsRenaming = true;
+    }
+
+    /// <summary>Moves the currently selected node (or <paramref name="node"/> when provided) to
+    /// <paramref name="targetTab"/>, removing any cross-tab connections in the process.</summary>
+    [RelayCommand(CanExecute = nameof(CanMoveNodeToTab))]
+    private void MoveNodeToTab((NodeViewModel Node, TabViewModel TargetTab) args)
+    {
+        var (node, targetTab) = args;
+
+        if (ActiveTab is null || ActiveTab == targetTab)
+        {
+            return;
+        }
+
+        var sourceTab = ActiveTab;
+
+        // Remove connections attached to this node — they cannot cross tabs.
+        var removedConnections = sourceTab.Connections
+            .Where(c => node.Inputs.Contains(c.Target) || node.Outputs.Contains(c.Source))
+            .ToList();
+
+        foreach (var conn in removedConnections)
+        {
+            sourceTab.Connections.Remove(conn);
+            conn.Source.IsConnected = sourceTab.Connections.Any(c => c.Source == conn.Source || c.Target == conn.Source);
+            conn.Target.IsConnected = sourceTab.Connections.Any(c => c.Source == conn.Target || c.Target == conn.Target);
+        }
+
+        sourceTab.Nodes.Remove(node);
+
+        if (SelectedNode == node)
+        {
+            SelectedNode = null;
+        }
+
+        node.IsRenaming = false;
+        targetTab.Nodes.Add(node);
+
+        ValidateNodeNamesInTab(sourceTab);
+        ValidateNodeNamesInTab(targetTab);
+
+        _undoRedoManager.Record(new MoveNodeToTabAction(this, node, sourceTab, targetTab, removedConnections));
+    }
+
+    private bool CanMoveNodeToTab((NodeViewModel Node, TabViewModel TargetTab) args) =>
+        args.Node is not null && args.TargetTab is not null;
+
+    /// <summary>Selects the given node and ensures the properties panel is visible.</summary>
+    [RelayCommand]
+    private void ShowNodeProperties(NodeViewModel? node)
+    {
+        if (node is not null)
+        {
+            SelectedNode = node;
+        }
+
+        IsPropertiesPanelVisible = true;
+    }
 
     /// <summary>Creates a copy of <paramref name="source"/> at <paramref name="position"/>, preserving all type-specific properties.</summary>
     private static NodeViewModel? CloneNode(NodeViewModel source, Point position) =>

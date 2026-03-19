@@ -39,6 +39,10 @@ public abstract partial class NodeViewModel : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
+    /// <summary>True when this node's name is currently being edited inline.</summary>
+    [ObservableProperty]
+    private bool _isRenaming;
+
     /// <summary>The input connectors for this node.</summary>
     public ObservableCollection<ConnectorViewModel> Inputs { get; } = [];
 
