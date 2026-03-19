@@ -1,0 +1,33 @@
+{
+  "name": "Math Computation Demo",
+  "version": "1.0.0",
+  "tabs": [
+    {
+      "title": "Arithmetic",
+      "nodes": [
+        { "name": "Value A", "type": "Number Producer", "value": 42.0 },
+        { "name": "Value B", "type": "Number Producer", "value": 8.0 },
+        { "name": "Sum", "type": "Arithmetic Transform", "operation": "Add" },
+        { "name": "Product", "type": "Arithmetic Transform", "operation": "Multiply" },
+        { "name": "Sum Result", "type": "Number Reporter" },
+        { "name": "Product Result", "type": "Number Reporter" }
+      ],
+      "layout": {
+        "Value A": { "x": 80, "y": 80 },
+        "Value B": { "x": 80, "y": 260 },
+        "Sum": { "x": 380, "y": 80 },
+        "Product": { "x": 380, "y": 280 },
+        "Sum Result": { "x": 700, "y": 100 },
+        "Product Result": { "x": 700, "y": 300 }
+      },
+      "connections": [
+        { "from": "Value A.Value", "to": "Sum.Input A" },
+        { "from": "Value B.Value", "to": "Sum.Input B" },
+        { "from": "Value A.Value", "to": "Product.Input A" },
+        { "from": "Value B.Value", "to": "Product.Input B" },
+        { "from": "Sum.Result", "to": "Sum Result.Value" },
+        { "from": "Product.Result", "to": "Product Result.Value" }
+      ]
+    }
+  ]
+}

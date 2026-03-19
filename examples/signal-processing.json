@@ -1,0 +1,53 @@
+{
+  "name": "Signal Processing Pipeline",
+  "version": "2.1.0",
+  "tabs": [
+    {
+      "title": "Generator",
+      "nodes": [
+        { "name": "Frequency", "type": "Number Producer", "value": 440.0 },
+        { "name": "Amplitude", "type": "Number Producer", "value": 1.0 },
+        { "name": "Noise Level", "type": "Random Number Generator", "minValue": 0.0, "maxValue": 0.05 },
+        { "name": "Base Signal", "type": "Arithmetic Transform", "operation": "Multiply" },
+        { "name": "Signal Out", "type": "Number Reporter" }
+      ],
+      "layout": {
+        "Frequency": { "x": 80, "y": 80 },
+        "Amplitude": { "x": 80, "y": 220 },
+        "Noise Level": { "x": 80, "y": 360 },
+        "Base Signal": { "x": 400, "y": 140 },
+        "Signal Out": { "x": 720, "y": 200 }
+      },
+      "connections": [
+        { "from": "Frequency.Value", "to": "Base Signal.Input A" },
+        { "from": "Amplitude.Value", "to": "Base Signal.Input B" },
+        { "from": "Base Signal.Result", "to": "Signal Out.Value" }
+      ]
+    },
+    {
+      "title": "Filter",
+      "nodes": [
+        { "name": "Raw Input", "type": "Number Producer", "value": 75.0 },
+        { "name": "Threshold", "type": "Number Producer", "value": 50.0 },
+        { "name": "Low Pass", "type": "Pass Filter", "filterType": "LessThan", "threshold": 50.0 },
+        { "name": "High Pass", "type": "Pass Filter", "filterType": "GreaterThan", "threshold": 50.0 },
+        { "name": "Low Output", "type": "Number Reporter" },
+        { "name": "High Output", "type": "Number Reporter" }
+      ],
+      "layout": {
+        "Raw Input": { "x": 80, "y": 80 },
+        "Threshold": { "x": 80, "y": 220 },
+        "Low Pass": { "x": 380, "y": 80 },
+        "High Pass": { "x": 380, "y": 260 },
+        "Low Output": { "x": 700, "y": 80 },
+        "High Output": { "x": 700, "y": 260 }
+      },
+      "connections": [
+        { "from": "Raw Input.Value", "to": "Low Pass.Input" },
+        { "from": "Raw Input.Value", "to": "High Pass.Input" },
+        { "from": "Low Pass.Output", "to": "Low Output.Value" },
+        { "from": "High Pass.Output", "to": "High Output.Value" }
+      ]
+    }
+  ]
+}
