@@ -237,8 +237,8 @@ public class UndoRedoTests
         node.Location = new Point(100, 200);
         vm.EndNodeDrag();
 
-        vm.UndoCommand.Execute(null); // undo add-node (connected to undo stack first)
-        // The MoveNodesAction was pushed after AddNodeAction, so undo pops move first.
+        // MoveNodesAction is on top of the stack (pushed after AddNodeAction); first undo reverts the move.
+        vm.UndoCommand.Execute(null);
         Assert.Equal(new Point(10, 20), node.Location);
     }
 
@@ -446,8 +446,8 @@ public class UndoRedoTests
     {
         var vm = new MainWindowViewModel();
         var tab = vm.Tabs[0];
-        vm.RecordTabRename(tab, "Main", "Renamed");
         tab.Name = "Renamed";
+        vm.RecordTabRename(tab, "Main", "Renamed");
 
         vm.UndoCommand.Execute(null);
 

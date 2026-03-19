@@ -33,7 +33,7 @@ public partial class MainWindow : Window
     private double _middlePanStartOffsetY;
 
     // ── Node-drag state ─────────────────────────────────────────────────────
-    private bool _leftButtonDownOnNode;
+    private bool _leftButtonDownOnInteractiveElement;
 
     // ── Tab-rename state ────────────────────────────────────────────────────
     private string? _tabRenameOldName;
@@ -159,7 +159,7 @@ public partial class MainWindow : Window
             if (IsSourceOnInteractiveElement(e))
             {
                 // A node (or connector/connection) was pressed — capture pre-drag locations.
-                _leftButtonDownOnNode = true;
+                _leftButtonDownOnInteractiveElement = true;
                 if (DataContext is MainWindowViewModel vm)
                 {
                     vm.BeginNodeDrag();
@@ -214,7 +214,7 @@ public partial class MainWindow : Window
 
     private void OnEditorPointerReleasedLeft(object? sender, PointerReleasedEventArgs e)
     {
-        if (!_leftButtonDownOnNode)
+        if (!_leftButtonDownOnInteractiveElement)
         {
             return;
         }
@@ -222,7 +222,7 @@ public partial class MainWindow : Window
         if (e.GetCurrentPoint(NodeEditorControl).Properties.PointerUpdateKind
             == PointerUpdateKind.LeftButtonReleased)
         {
-            _leftButtonDownOnNode = false;
+            _leftButtonDownOnInteractiveElement = false;
             if (DataContext is MainWindowViewModel vm)
             {
                 vm.EndNodeDrag();
